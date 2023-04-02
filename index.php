@@ -21,6 +21,7 @@ require __DIR__ . '/PHPMailer/src/SMTP.php';
 include 'DbConnect.php';
 $objDb = new DbConnect;
 $conn = $objDb->connect();
+$base_url = 'http://localhost:3000/verify';
 
 $method = $_SERVER['REQUEST_METHOD'];
 switch ($method) {
@@ -80,19 +81,19 @@ switch ($method) {
                     $stmt = $conn->prepare($sql);
                     if ($stmt->execute() == true) {
                         http_response_code(200);
-                        $response = ['status' => 'Success', 'message' => 'Your email has been verified!'];
+                        $response = ['status' => 200, 'message' => 'Your email has been verified!'];
                     } else {
                         http_response_code(400);
-                        $response = ['status' => 'Error', 'message' => 'Unknown Server Error!'];
+                        $response = ['status' => 400, 'message' => 'Unknown Server Error!'];
                     }
                 } else {
-                    http_response_code(400);
-                    $response = ['status' => 'Error', 'message' => 'Your email is already verified!'];
+                    http_response_code(404);
+                    $response = ['status' => 404, 'message' => 'Your email is already verified!'];
                 }
 
             } else {
                 http_response_code(400);
-                $response = ['status' => 'Error', 'message' => 'Unknown Server Error!'];
+                $response = ['status' => 400, 'message' => 'Unknown Server Error!'];
             }
 
             echo json_encode($response);
@@ -104,7 +105,7 @@ switch ($method) {
         }
         // $api['users'] = $users
 
-        echo json_encode($data);
+        // echo json_encode($data);
         break;
 
     case "POST":
@@ -157,186 +158,81 @@ switch ($method) {
                 // Execute insert statement here
                 $result = $stmt->execute();
                 // Execute statement
-                if ($sresult === true) {
+                if ($result === true) {
 
-                    $verification_code = bin2hex(random_bytes(32));
-                    // $sql = "UPDATE users SET verification_code = '$verification_code' WHERE email = '$email'";
-                    // $result = mysqli_query($conn, $sql);
-                    // if (!$result) {
-                    // die("Database error: " . mysqli_error($conn));
-                    // }
+                    $to = 'jatinrey@gmail.com';
+                    $subject = 'Signup | Verification';
+                    $message = ' 
 
-                    // send verification email
-                    // $to = "jxs2011@mavs.uta.edu";
-                    // $subject = "Verify your email";
-                    // $message = "Hello,\r\n\r\n";
-                    // $message .= "Thank you for signing up. Please click the following link to verify your email:\r\n";
-                    // $message .= "http://example.com/verify-email?code=$verification_code\r\n\r\n";
-                    // $message .= "Best regards,\r\n";
-                    // $message .= "Your Site Team";
-                    // $headers = "From: Your Site <noreply@example.com>\r\n";
-                    // $headers .= "Reply-To: Your Site <info@example.com>\r\n";
-                    // $headers .= "Content-Type: text/plain; charset=utf-8\r\n";
-                    // $headers .= "Content-Transfer-Encoding: 8bit\r\n";
-                    // if (mail($to, $subject, $message, $headers)) {
-                    // echo "Verification email sent.";
-                    // } else {
-                    // echo "Email sending failed.";
-                    // }
+                    Thank you for signing up on ResiComm! 
+                    Your account has been created, you can login with the following credentials after you have activated your account by pressing the url below. 
 
+                    ------------------------ 
+                    Email: ' . $email . ' 
+                    Password: ' . $password . ' 
+                    ------------------------ 
 
+                    Please click this link to activate your account: 
+                    ' . $base_url . '?email=' . $email . '&hash=' . $hash . ' 
 
+                    ';
+                    $from = 'resicomm@jxs2011.uta.cloud';
 
+                    // SMTP server details
+                    $smtp_host = 'mail.jxs2011.uta.cloud';
+                    $smtp_port = 465;
+                    $smtp_username = 'resicomm@jxs2011.uta.cloud';
+                    $smtp_password = 'Resicomm@123';
 
+                    // Create a new PHPMailer instance
+                    $mail = new PHPMailer();
 
-                    // TEST
+                    // Enable SMTP debugging
+                    $mail->SMTPDebug = 0;
 
+                    // Set mailer to use SMTP
+                    $mail->isSMTP();
 
+                    // Specify SMTP server
+                    $mail->Host = $smtp_host;
 
+                    // Enable SMTP authentication
+                    $mail->SMTPAuth = true;
 
+                    // Set SMTP username and password
+                    $mail->Username = $smtp_username;
+                    $mail->Password = $smtp_password;
 
-                    http_response_code(200);
-                    $response = ['status' => 'Success', 'message' => 'Record created successfully.'];
+                    // Enable TLS encryption
+                    $mail->SMTPSecure = 'ssl';
+
+                    // Set SMTP port
+                    $mail->Port = $smtp_port;
+
+                    // Set email details
+                    $mail->setFrom($from);
+                    $mail->addAddress($to);
+                    $mail->Subject = $subject;
+                    $mail->Body = $message;
+
+                    // Send the email
+                    if (!$mail->send()) {
+                        http_response_code(400);
+                        $response = ['status' => 'Error', 'message' => 'Server Error.'];
+                    } else {
+                        http_response_code(200);
+                        $response = ['status' => 'Success', 'message' => 'User registration successful! Please verify your email to continue.'];
+                    }
+
                 }
             } catch (PDOException $e) {
                 if ($e->errorInfo[1] == 1062) {
                     // Handle duplicate entry error here
                     // You can access the error code using $e->errorInfo[1]
 
-
-
-                    $to = 'jatinrey@gmail.com';
-                    $subject = 'Signup | Verification';
-                    $message = ' 
-
-                    Thank you for signing up on ResiComm! 
-                    Your account has been created, you can login with the following credentials after you have activated your account by pressing the url below. 
-
-                    ------------------------ 
-                    Email: ' . $email . ' 
-                    Password: ' . $password . ' 
-                    ------------------------ 
-
-                    Please click this link to activate your account: 
-                    http://www.yourwebsite.com/verify.php?email=' . $email . '&hash=' . $hash . ' 
-
-                    ';
-                    $from = 'resicomm@jxs2011.uta.cloud';
-
-                    // SMTP server details
-                    $smtp_host = 'mail.jxs2011.uta.cloud';
-                    $smtp_port = 465;
-                    $smtp_username = 'resicomm@jxs2011.uta.cloud';
-                    $smtp_password = 'Resicomm@123';
-
-                    // Create a new PHPMailer instance
-                    $mail = new PHPMailer();
-
-                    // Enable SMTP debugging
-                    $mail->SMTPDebug = 0;
-
-                    // Set mailer to use SMTP
-                    $mail->isSMTP();
-
-                    // Specify SMTP server
-                    $mail->Host = $smtp_host;
-
-                    // Enable SMTP authentication
-                    $mail->SMTPAuth = true;
-
-                    // Set SMTP username and password
-                    $mail->Username = $smtp_username;
-                    $mail->Password = $smtp_password;
-
-                    // Enable TLS encryption
-                    $mail->SMTPSecure = 'ssl';
-
-                    // Set SMTP port
-                    $mail->Port = $smtp_port;
-
-                    // Set email details
-                    $mail->setFrom($from);
-                    $mail->addAddress($to);
-                    $mail->Subject = $subject;
-                    $mail->Body = $message;
-
-                    // Send the email
-                    if (!$mail->send()) {
-                        echo 'Mailer Error: ' . $mail->ErrorInfo;
-                    } else {
-                        echo 'Message sent!';
-                    }
-
-
                     http_response_code(400);
                     $response = ['status' => 'Error', 'message' => 'Account with this email already exists!'];
                 } else {
-                    // Handle other database errors here
-
-                    $to = 'jatinrey@gmail.com';
-                    $subject = 'Signup | Verification';
-                    $message = ' 
-
-                    Thank you for signing up on ResiComm! 
-                    Your account has been created, you can login with the following credentials after you have activated your account by pressing the url below. 
-
-                    ------------------------ 
-                    Email: ' . $email . ' 
-                    Password: ' . $password . ' 
-                    ------------------------ 
-
-                    Please click this link to activate your account: 
-                    http://www.yourwebsite.com/verify.php?email=' . $email . '&hash=' . $hash . ' 
-
-                    ';
-                    $from = 'resicomm@jxs2011.uta.cloud';
-
-                    // SMTP server details
-                    $smtp_host = 'mail.jxs2011.uta.cloud';
-                    $smtp_port = 465;
-                    $smtp_username = 'resicomm@jxs2011.uta.cloud';
-                    $smtp_password = 'Resicomm@123';
-
-                    // Create a new PHPMailer instance
-                    $mail = new PHPMailer();
-
-                    // Enable SMTP debugging
-                    $mail->SMTPDebug = 0;
-
-                    // Set mailer to use SMTP
-                    $mail->isSMTP();
-
-                    // Specify SMTP server
-                    $mail->Host = $smtp_host;
-
-                    // Enable SMTP authentication
-                    $mail->SMTPAuth = true;
-
-                    // Set SMTP username and password
-                    $mail->Username = $smtp_username;
-                    $mail->Password = $smtp_password;
-
-                    // Enable TLS encryption
-                    $mail->SMTPSecure = 'ssl';
-
-                    // Set SMTP port
-                    $mail->Port = $smtp_port;
-
-                    // Set email details
-                    $mail->setFrom($from);
-                    $mail->addAddress($to);
-                    $mail->Subject = $subject;
-                    $mail->Body = $message;
-
-                    // Send the email
-                    if (!$mail->send()) {
-                        echo 'Mailer Error: ' . $mail->ErrorInfo;
-                    } else {
-                        echo 'Message sent!';
-                    }
-
-
-
                     http_response_code(400);
                     $response = ['status' => 'Error', 'message' => 'Failed to create record.'];
                 }
