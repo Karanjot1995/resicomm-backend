@@ -22,9 +22,7 @@ $objDb = new DbConnect;
 $email = new Mail();
 
 $conn = $objDb->connect();
-// $verification_url = 'http://localhost/resicomm-server/index.php/verify?';
-$base_url = 'http://localhost:3000/login';
-
+$base_url = 'http://localhost:3000/';
 
 $method = $_SERVER['REQUEST_METHOD'];
 switch ($method) {
@@ -205,7 +203,7 @@ switch ($method) {
                 // Execute statement
                 if ($result === true) {
 
-                    $to = 'jatinrey@gmail.com';
+                    $to = $email;
                     $from = 'resicomm@jxs2011.uta.cloud';
                     $subject = 'Signup | Verification';
                     $message = ' 
@@ -219,7 +217,7 @@ switch ($method) {
                     ------------------------ 
 
                     Please click this link to activate your account: 
-                    ' . $base_url . '?email=' . $email . '&hash=' . $hash . ' 
+                    ' . $base_url . 'verify?email=' . $email . '&hash=' . $hash . ' 
 
                     ';
 
@@ -282,7 +280,7 @@ switch ($method) {
 
                     $stmt->execute();
 
-                    $to = 'jatinrey@gmail.com';
+                    $to = $email;
                     $subject = 'Signup | Verification';
                     $message = ' 
 
@@ -295,7 +293,7 @@ switch ($method) {
                     ------------------------ 
 
                     Please click this link to activate your account: 
-                    ' . $base_url . '?email=' . $email . '&hash=' . $hash . ' 
+                    ' . $base_url . 'verify?email=' . $email . '&hash=' . $hash . ' 
 
                     ';
                     $from = 'resicomm@jxs2011.uta.cloud';
@@ -354,6 +352,128 @@ switch ($method) {
             } else {
                 http_response_code(400);
                 $response = ['status' => 400, 'message' => 'Unknown Server Error!'];
+            }
+
+            echo json_encode($response);
+        } else if (($path[3]) && $path[3] == "forget-password") {
+
+            $email = $data->email;
+
+            $stmt = $conn->prepare("SELECT * FROM users WHERE email ='$email'");
+
+            $stmt->execute();
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($stmt->rowCount() == 1) {
+                $hash = md5(rand(0, 1000));
+
+                try {
+                    $sql = "UPDATE users SET hash='$hash' WHERE email ='$email'";
+                    $stmt = $conn->prepare($sql);
+
+                    $stmt->execute();
+
+                    $to = $email;
+                    $name = $user['fname'];
+                    $subject = 'Forget Password';
+                    $message = ' 
+
+                    Hi ' . $name . ',
+                    You recently requested to reset the password for your ResiComm portal account. Click the link below to proceed.
+                    ' . $base_url . 'reset-password?email=' . $email . '&hash=' . $hash . ' 
+
+                    If you did not request a password reset, please ignore this email or reply to let us know. This password reset link is only valid for the next 30 minutes.
+
+                    Thanks, 
+                    The ResiComm team';
+
+
+                    $from = 'resicomm@jxs2011.uta.cloud';
+
+                    // SMTP server details
+                    $smtp_host = 'mail.jxs2011.uta.cloud';
+                    $smtp_port = 465;
+                    $smtp_username = 'resicomm@jxs2011.uta.cloud';
+                    $smtp_password = 'Resicomm@123';
+
+                    // Create a new PHPMailer instance
+                    $mail = new PHPMailer();
+
+                    // Enable SMTP debugging
+                    $mail->SMTPDebug = 0;
+
+                    // Set mailer to use SMTP
+                    $mail->isSMTP();
+
+                    // Specify SMTP server
+                    $mail->Host = $smtp_host;
+
+                    // Enable SMTP authentication
+                    $mail->SMTPAuth = true;
+
+                    // Set SMTP username and password
+                    $mail->Username = $smtp_username;
+                    $mail->Password = $smtp_password;
+
+                    // Enable TLS encryption
+                    $mail->SMTPSecure = 'ssl';
+
+                    // Set SMTP port
+                    $mail->Port = $smtp_port;
+
+                    // Set email details
+                    $mail->setFrom($from);
+                    $mail->addAddress($to);
+                    $mail->Subject = $subject;
+                    $mail->Body = $message;
+
+                    // Send the email
+                    if (!$mail->send()) {
+                        http_response_code(400);
+                        $response = ['status' => 'Error', 'message' => 'Server Error.'];
+                    } else {
+                        http_response_code(200);
+                        $response = ['status' => 'Success', 'message' => 'Email sent successfully!'];
+                    }
+
+                } catch (Exception $e) {
+                    http_response_code(400);
+                    $response = ['status' => 'Error', 'message' => 'Server Error!'];
+                }
+
+            } else {
+                http_response_code(400);
+                $response = ['status' => 400, 'message' => 'User with this email does not exist!'];
+            }
+
+            echo json_encode($response);
+        } else if (($path[3]) && $path[3] == "reset-password") {
+
+            $email = $data->email;
+            $hash = $data->hash;
+            $password = $data->password;
+
+            // Check if email and hash combination exist in database
+            $sql = "SELECT * FROM users WHERE email='$email' AND hash='$hash'";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute();
+            $users = $stmt->fetch(PDO::FETCH_ASSOC);
+            $data = $users;
+
+            if ($stmt->rowCount() == 1) {
+                $sql = "UPDATE users SET password ='$password', hash = NULL WHERE email='$email'";
+                $stmt = $conn->prepare($sql);
+                if ($stmt->execute() == true) {
+                    http_response_code(200);
+                    $response = ['status' => 200, 'message' => 'Password reset successful!'];
+                } else {
+                    http_response_code(400);
+                    $response = ['status' => 400, 'message' => 'Password reset failed!'];
+                }
+
+            } else {
+                http_response_code(400);
+                $response = ['status' => 400, 'message' => 'Unknown Server Error! Request a new verification mail.'];
             }
 
             echo json_encode($response);
