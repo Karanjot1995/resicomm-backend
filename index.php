@@ -4,18 +4,15 @@ ini_set('display_errors', 1);
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Headers: *");
 header("Access-Control-Allow-Methods: *");
+include 'mail.php'; 
+// /* Exception class. */
+// require __DIR__ . '/PHPMailer/src/Exception.php';
 
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
+// /* The main PHPMailer class. */
+// require __DIR__ . '/PHPMailer/src/PHPMailer.php';
 
-/* Exception class. */
-require __DIR__ . '/PHPMailer/src/Exception.php';
-
-/* The main PHPMailer class. */
-require __DIR__ . '/PHPMailer/src/PHPMailer.php';
-
-/* SMTP class, needed if you want to use SMTP. */
-require __DIR__ . '/PHPMailer/src/SMTP.php';
+// /* SMTP class, needed if you want to use SMTP. */
+// require __DIR__ . '/PHPMailer/src/SMTP.php';
 
 
 include 'DbConnect.php';
@@ -28,6 +25,23 @@ switch ($method) {
     case "GET":
         $sql = "SELECT * FROM users";
         $path = explode('/', $_SERVER['REQUEST_URI']);
+
+        // $to = 'karan.nanda97@gmail.com';
+        // $from = 'resicomm@jxs2011.uta.cloud';
+        // $subject = 'Signup | Verification';
+        // $message = 'Hey there!';
+
+        // $customMessage = (object) array(
+        //     'to' => $to,
+        //     'from' => $from,
+        //     'subject' => $subject,
+        //     'message'=>  $message
+        // );
+
+        // $email = new Mail();
+        // $email->transactionalEmail($customMessage);
+        // $email->transactionalEmail($customMessage);
+        
         // if(isset($path[2]) && is_numeric($path[3])){
         // }
 
@@ -105,7 +119,7 @@ switch ($method) {
         }
         // $api['users'] = $users
 
-        // echo json_encode($data);
+        echo json_encode($data);
         break;
 
     case "POST":
@@ -155,12 +169,15 @@ switch ($method) {
             $stmt->bindParam(":hash", $hash);
 
             try {
+                
+
                 // Execute insert statement here
                 $result = $stmt->execute();
                 // Execute statement
                 if ($result === true) {
 
                     $to = 'jatinrey@gmail.com';
+                    $from = 'resicomm@jxs2011.uta.cloud';
                     $subject = 'Signup | Verification';
                     $message = ' 
 
@@ -176,54 +193,16 @@ switch ($method) {
                     ' . $base_url . '?email=' . $email . '&hash=' . $hash . ' 
 
                     ';
-                    $from = 'resicomm@jxs2011.uta.cloud';
 
-                    // SMTP server details
-                    $smtp_host = 'mail.jxs2011.uta.cloud';
-                    $smtp_port = 465;
-                    $smtp_username = 'resicomm@jxs2011.uta.cloud';
-                    $smtp_password = 'Resicomm@123';
+                    $customMessage = (object) array(
+                        'to' => $to,
+                        'from' => $from,
+                        'subject' => $subject,
+                        'message'=>  $message
+                    );
 
-                    // Create a new PHPMailer instance
-                    $mail = new PHPMailer();
-
-                    // Enable SMTP debugging
-                    $mail->SMTPDebug = 0;
-
-                    // Set mailer to use SMTP
-                    $mail->isSMTP();
-
-                    // Specify SMTP server
-                    $mail->Host = $smtp_host;
-
-                    // Enable SMTP authentication
-                    $mail->SMTPAuth = true;
-
-                    // Set SMTP username and password
-                    $mail->Username = $smtp_username;
-                    $mail->Password = $smtp_password;
-
-                    // Enable TLS encryption
-                    $mail->SMTPSecure = 'ssl';
-
-                    // Set SMTP port
-                    $mail->Port = $smtp_port;
-
-                    // Set email details
-                    $mail->setFrom($from);
-                    $mail->addAddress($to);
-                    $mail->Subject = $subject;
-                    $mail->Body = $message;
-
-                    // Send the email
-                    if (!$mail->send()) {
-                        http_response_code(400);
-                        $response = ['status' => 'Error', 'message' => 'Server Error.'];
-                    } else {
-                        http_response_code(200);
-                        $response = ['status' => 'Success', 'message' => 'User registration successful! Please verify your email to continue.'];
-                    }
-
+                    $email = new Mail();
+                    $email->transactionalEmail($customMessage);
                 }
             } catch (PDOException $e) {
                 if ($e->errorInfo[1] == 1062) {
