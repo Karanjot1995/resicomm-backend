@@ -1,11 +1,12 @@
 <?php
 use PHPMailer\PHPMailer\PHPMailer;
+
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Headers: *");
 header("Access-Control-Allow-Methods: *");
-include 'mail.php'; 
+include 'mail.php';
 include 'DbConnect.php';
 // /* Exception class. */
 // require __DIR__ . '/PHPMailer/src/Exception.php';
@@ -48,7 +49,7 @@ switch ($method) {
         // );
 
         // $email->transactionalEmail($customMessage);
-        
+
         // if(isset($path[2]) && is_numeric($path[3])){
         // }
 
@@ -141,7 +142,7 @@ switch ($method) {
         }
         // $api['users'] = $users
 
-        echo json_encode($data);
+        // echo json_encode($data);
         break;
 
     case "POST":
@@ -198,7 +199,7 @@ switch ($method) {
             $stmt->bindParam(":hash", $hash);
 
             try {
-                
+
                 // Execute insert statement here
                 $result = $stmt->execute();
                 // Execute statement
@@ -226,7 +227,7 @@ switch ($method) {
                         'to' => $to,
                         'from' => $from,
                         'subject' => $subject,
-                        'message'=>  $message
+                        'message' => $message
                     );
 
                     $email->transactionalEmail($customMessage);
