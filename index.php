@@ -20,7 +20,9 @@ $objDb = new DbConnect;
 $email = new Mail();
 
 $conn = $objDb->connect();
-$base_url = 'http://localhost:3000/verify';
+// $verification_url = 'http://localhost/resicomm-server/index.php/verify?';
+$base_url = 'http://localhost:3000/login';
+
 
 $method = $_SERVER['REQUEST_METHOD'];
 switch ($method) {
@@ -31,7 +33,11 @@ switch ($method) {
         // $to = 'karan.nanda97@gmail.com';
         // $from = 'resicomm@jxs2011.uta.cloud';
         // $subject = 'Signup | Verification';
-        // $message = 'Hey there!';
+        // $h = '1595af6435015c77a7149e92a551338e';
+        // $em = 'karan.nanda97@gmail.com';
+        // $message = 'Please click this link to activate your account: '. $base_url . '?email=' . $em . '&hash=' . $h ;
+
+        // // $message = 'Hey there!';
 
         // $customMessage = (object) array(
         //     'to' => $to,
