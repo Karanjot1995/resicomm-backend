@@ -85,7 +85,7 @@ switch ($method) {
             $stmt->execute();
             $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $data = $users;
-        }else if (isset($path[3]) && $path[3] == "services") {
+        }else if (isset($path[3]) && $path[3] == "amenities") {
             $stmt = $conn->prepare("SELECT * from amenities");
             $stmt->execute();
             $amenities = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -142,7 +142,7 @@ switch ($method) {
         }
         // $api['users'] = $users
 
-        // echo json_encode($data);
+        echo json_encode($data);
         break;
 
     case "POST":
