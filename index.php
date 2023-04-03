@@ -177,7 +177,6 @@ switch ($method) {
 
             try {
                 
-
                 // Execute insert statement here
                 $result = $stmt->execute();
                 // Execute statement
