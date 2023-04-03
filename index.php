@@ -5,6 +5,7 @@ header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Headers: *");
 header("Access-Control-Allow-Methods: *");
 include 'mail.php'; 
+include 'DbConnect.php';
 // /* Exception class. */
 // require __DIR__ . '/PHPMailer/src/Exception.php';
 
@@ -15,8 +16,9 @@ include 'mail.php';
 // require __DIR__ . '/PHPMailer/src/SMTP.php';
 
 
-include 'DbConnect.php';
 $objDb = new DbConnect;
+$email = new Mail();
+
 $conn = $objDb->connect();
 $base_url = 'http://localhost:3000/verify';
 
@@ -38,8 +40,6 @@ switch ($method) {
         //     'message'=>  $message
         // );
 
-        // $email = new Mail();
-        // $email->transactionalEmail($customMessage);
         // $email->transactionalEmail($customMessage);
         
         // if(isset($path[2]) && is_numeric($path[3])){
@@ -207,7 +207,6 @@ switch ($method) {
                         'message'=>  $message
                     );
 
-                    $email = new Mail();
                     $email->transactionalEmail($customMessage);
                 }
             } catch (PDOException $e) {
