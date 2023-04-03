@@ -54,26 +54,41 @@ switch ($method) {
 
         $data = (object) array();
         if (isset($path[3]) && $path[3] == "employees") {
-            $sql = "SELECT * from employees, users where employees.user_id=users.id";
+            $sql = "SELECT * from users where type='employee'";
             $stmt = $conn->prepare($sql);
             $stmt->execute();
-            $managers = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            $all_managers = (object) array(
+            $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $all_employees = (object) array(
                 'building' => array(),
                 'pool' => array(),
                 'security' => array(),
                 'garden' => array()
             );
-            foreach ($managers as $m) {
-                $dept = $m['department'];
-                array_push($all_managers->$dept, $m);
+            $emps = array();
+            foreach ($employees as $emp) {
+                $dept = $emp['department'];
+                if($dept=='building'){
+                    array_push($all_employees->building, $emp);
+                }else if($dept=='pool'){
+                    array_push($all_employees->pool, $emp);
+                }else if($dept=='garden'){
+                    array_push($all_employees->garden, $emp);
+                }else if($dept=='security'){
+                    array_push($all_employees->security, $emp);
+                }
+                array_push($emps, $emp);
             }
-            $data = $all_managers;
+            $data = $all_employees;
         } else if (isset($path[3]) && $path[3] == "users") {
             $stmt = $conn->prepare($sql);
             $stmt->execute();
             $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $data = $users;
+        }else if (isset($path[3]) && $path[3] == "services") {
+            $stmt = $conn->prepare("SELECT * from amenities");
+            $stmt->execute();
+            $amenities = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $data = $amenities;
         } else if (isset($path[3]) && $path[3] == "user" && isset($path[4]) && is_numeric($path[4])) {
             $sql .= " WHERE id = :id";
             $stmt = $conn->prepare($sql);
