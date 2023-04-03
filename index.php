@@ -123,27 +123,34 @@ switch ($method) {
         break;
 
     case "POST":
-        $user = json_decode(file_get_contents('php://input'));
+        $data = json_decode(file_get_contents('php://input'));
         $path = explode('/', $_SERVER['REQUEST_URI']);
         // if(isset($path[2]) && is_numeric($path[3])){
         // }
-        $data = (object) array();
-        if (isset($path[3]) && $path[3] == "users" && isset($path[4]) && $path[4] == "login") {
-            $email = $user->email;
-            $sql = "SELECT * from users where email=" + $email + ";";
-            $stmt = $conn->prepare($sql);
+        // $data = (object) array();
+        if (isset($path[3]) && $path[3] == "user" && isset($path[4]) && $path[4] == "login" && isset($data->email) && isset($data->password)) {
+            $email = $data->email;
+            $password = $data->password;
+
+
+            $stmt = $conn->prepare("SELECT * FROM users WHERE email = :email AND password = :password");
+            $stmt->bindParam(':email', $email);
+            $stmt->bindParam(':password', $password);
             $stmt->execute();
-            $user = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            $data = $user;
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($stmt->rowCount() == 1) {
+                // TODO: User authenticated, set session and redirect to dashboard
+                http_response_code(200);
+                $response = ['status' => 200, 'message' => 'Successful!', 'user' => $user];
+            } else {
+                // TODO: Authentication failed, show error message
+                http_response_code(401);
+                $response = ['status' => 401, 'message' => 'Email or Password incorrect!'];
+            }
+
+            echo json_encode($response);
+
         } else if (($path[3]) && $path[3] == "register") {
-            // $email = $user->email;
-            // $sql = "SELECT * from users where email=" + $email + ";";
-            // $stmt = $conn->prepare($sql);
-            // $stmt->execute();
-            // $user = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            // $data = $user;
-
-
 
             // Retrieve user data from request
             $json_data = file_get_contents('php://input');
@@ -247,7 +254,6 @@ switch ($method) {
         //     $response = ['status' => 0, 'message' => 'Failed to create record.'];
         // }
         // $response = ['status' => 200, 'data' => $user];
-        echo json_encode($response);
         break;
 
     case "PUT":
