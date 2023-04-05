@@ -66,13 +66,13 @@ switch ($method) {
             $emps = array();
             foreach ($employees as $emp) {
                 $dept = $emp['department'];
-                if($dept=='building'){
+                if ($dept == 'building') {
                     array_push($all_employees->building, $emp);
-                }else if($dept=='pool'){
+                } else if ($dept == 'pool') {
                     array_push($all_employees->pool, $emp);
-                }else if($dept=='garden'){
+                } else if ($dept == 'garden') {
                     array_push($all_employees->garden, $emp);
-                }else if($dept=='security'){
+                } else if ($dept == 'security') {
                     array_push($all_employees->security, $emp);
                 }
                 array_push($emps, $emp);
@@ -83,8 +83,20 @@ switch ($method) {
             $stmt->execute();
             $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $data = $users;
-        }else if (isset($path[3]) && $path[3] == "amenities") {
+        } else if (isset($path[3]) && $path[3] == "amenities") {
             $stmt = $conn->prepare("SELECT * from amenities");
+            $stmt->execute();
+            $amenities = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $data = $amenities;
+        } else if (isset($path[3]) && (strpos($path[3], 'vehicles') !== false) && isset($_GET['id']) && !empty($_GET['id'])) {
+            $vehicle_id = $_GET['id'];
+            $stmt = $conn->prepare("SELECT * from vehicles where id='$vehicle_id'");
+            $stmt->execute();
+            $vehicles = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $vehicle = $vehicles[0];
+            $data = ['status' => 200, 'vehicle_details' => $vehicle];
+        } else if (isset($path[3]) && $path[3] == "vehicles") {
+            $stmt = $conn->prepare("SELECT * from vehicles");
             $stmt->execute();
             $amenities = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $data = $amenities;
@@ -495,20 +507,43 @@ switch ($method) {
         break;
 
     case "PUT":
-        $user = json_decode(file_get_contents('php://input'));
-        $sql = "UPDATE users SET name= :name, email =:email, mobile =:mobile, updated_at =:updated_at WHERE id = :id";
-        $stmt = $conn->prepare($sql);
-        $updated_at = date('Y-m-d');
-        $stmt->bindParam(':id', $user->id);
-        $stmt->bindParam(':name', $user->name);
-        $stmt->bindParam(':email', $user->email);
-        $stmt->bindParam(':mobile', $user->mobile);
-        $stmt->bindParam(':updated_at', $updated_at);
+        $path = explode('/', $_SERVER['REQUEST_URI']);
+        if (isset($path[3]) && (strpos($path[3], 'vehicles') !== false) && isset($_GET['id']) && !empty($_GET['id'])) {
+            $input_data = file_get_contents("php://input");
+            $data = json_decode($input_data, true);
+            $vehicle_id = $_GET['id'];
+            $make = $data['make'];
+            $model = $data['model'];
+            $number_plate = $data['number_plate'];
+            $color = $data['color'];
+            $type = $data['type'];
 
-        if ($stmt->execute()) {
-            $response = ['status' => 1, 'message' => 'Record updated successfully.'];
+            $sql = "UPDATE vehicles SET make = '$make', model = '$model', number_plate = '$number_plate', color = '$color', type = '$type' WHERE id = '$vehicle_id'";
+            $stmt = $conn->prepare($sql);
+            if ($stmt->execute()) {
+                $response = ['status' => 200, 'message' => 'Vehicle details updated successfully!'];
+            } else {
+                $response = ['status' => 400, 'message' => 'Failed to update vehicle details!'];
+            }
         } else {
-            $response = ['status' => 0, 'message' => 'Failed to update record.'];
+            $response = ['status' => 400, 'message' => 'Server Error'];
+
+            // $user = json_decode(file_get_contents('php://input'));
+            // $sql = "UPDATE users SET name= :name, email =:email, mobile =:mobile, updated_at =:updated_at WHERE id = :id";
+            // $stmt = $conn->prepare($sql);
+            // $updated_at = date('Y-m-d');
+            // $stmt->bindParam(':id', $user->id);
+            // $stmt->bindParam(':name', $user->name);
+            // $stmt->bindParam(':email', $user->email);
+            // $stmt->bindParam(':mobile', $user->mobile);
+            // $stmt->bindParam(':updated_at', $updated_at);
+
+            // if ($stmt->execute()) {
+            //     $response = ['status' => 1, 'message' => 'Record updated successfully.'];
+            // } else {
+            //     $response = ['status' => 0, 'message' => 'Failed to update record.'];
+            // }
+
         }
         echo json_encode($response);
         break;
