@@ -489,6 +489,40 @@ switch ($method) {
             }
 
             echo json_encode($response);
+        } else if (isset($path[3]) && $path[3] == "add-vehicle") {
+            $json_data = file_get_contents('php://input');
+            $_POST = json_decode($json_data, true);
+            $make = $_POST["make"];
+            $model = $_POST["model"];
+            $number_plate = $_POST['number_plate'];
+            $color = $_POST['color'];
+            $type = $_POST['type'];
+            $user_id = $_POST['user_id'];
+           
+            $stmt = $conn->prepare("INSERT INTO vehicles (make, model, number_plate, color, type, user_id) VALUES ('$make', '$model', '$number_plate', '$color', '$type', '$user_id')");
+            
+            if ($stmt->execute() == true) {
+                $response = ['status' => 200, 'message' => 'Vehicle added successfully!'];
+            } else {
+                $response = ['status' => 400, 'message' => 'Failed to add vehicle!'];
+            }
+
+            echo json_encode($response);
+        } else {
+            $response = ['status' => 400, 'message' => 'Server Error'];
+            echo json_encode($response);
+            // $sql = "DELETE FROM users WHERE id = :id";
+            // $path = explode('/', $_SERVER['REQUEST_URI']);
+
+            // $stmt = $conn->prepare($sql);
+            // $stmt->bindParam(':id', $path[3]);
+
+            // if ($stmt->execute()) {
+            //     $response = ['status' => 1, 'message' => 'Record deleted successfully.'];
+            // } else {
+            //     $response = ['status' => 0, 'message' => 'Failed to delete record.'];
+            // }
+
         }
         // $sql = "INSERT INTO users(id, name, email, mobile, created_at) VALUES(null, :name, :email, :mobile, :created_at)";
         // $stmt = $conn->prepare($sql);
@@ -520,7 +554,7 @@ switch ($method) {
 
             $sql = "UPDATE vehicles SET make = '$make', model = '$model', number_plate = '$number_plate', color = '$color', type = '$type' WHERE id = '$vehicle_id'";
             $stmt = $conn->prepare($sql);
-            if ($stmt->execute()) {
+            if ($stmt->execute() == true) {
                 $response = ['status' => 200, 'message' => 'Vehicle details updated successfully!'];
             } else {
                 $response = ['status' => 400, 'message' => 'Failed to update vehicle details!'];
@@ -549,16 +583,31 @@ switch ($method) {
         break;
 
     case "DELETE":
-        $sql = "DELETE FROM users WHERE id = :id";
         $path = explode('/', $_SERVER['REQUEST_URI']);
-
-        $stmt = $conn->prepare($sql);
-        $stmt->bindParam(':id', $path[3]);
-
-        if ($stmt->execute()) {
-            $response = ['status' => 1, 'message' => 'Record deleted successfully.'];
+        if (isset($path[3]) && (strpos($path[3], 'vehicles') !== false) && isset($_GET['id']) && !empty($_GET['id'])) {
+            $vehicle_id = $_GET['id'];
+            $sql = "DELETE FROM vehicles WHERE id = '$vehicle_id'";
+            $stmt = $conn->prepare($sql);
+            if ($stmt->execute() == true) {
+                $response = ['status' => 200, 'message' => 'Vehicle deleted successfully!'];
+            } else {
+                $response = ['status' => 400, 'message' => 'Failed to delete vehicle!'];
+            }
         } else {
-            $response = ['status' => 0, 'message' => 'Failed to delete record.'];
+            $response = ['status' => 400, 'message' => 'Server Error'];
+
+            // $sql = "DELETE FROM users WHERE id = :id";
+            // $path = explode('/', $_SERVER['REQUEST_URI']);
+
+            // $stmt = $conn->prepare($sql);
+            // $stmt->bindParam(':id', $path[3]);
+
+            // if ($stmt->execute()) {
+            //     $response = ['status' => 1, 'message' => 'Record deleted successfully.'];
+            // } else {
+            //     $response = ['status' => 0, 'message' => 'Failed to delete record.'];
+            // }
+
         }
         echo json_encode($response);
         break;
