@@ -151,10 +151,102 @@ switch ($method) {
         // if(isset($path[2]) && is_numeric($path[3])){
         // }
         // $data = (object) array();
-        if (isset($path[3]) && $path[3] == "user" && isset($path[4]) && $path[4] == "login" && isset($data->email) && isset($data->password)) {
+        if (isset($path[3]) && $path[3] == "employee" && isset($path[4]) && $path[4] == "add") {
+            // $email = $data->email;
+            // $password = $data->password;
+            $json_data = file_get_contents('php://input');
+            $_POST = json_decode($json_data, true);
+            $fname = $_POST["fname"];
+            $lname = $_POST["lname"];
+            $email = $_POST["email"];
+            $password = $_POST["password"];
+            $department = $_POST["department"];
+            $phone = $_POST["phone"];
+            $type = $_POST["type"];
+
+            $stmt = $conn->prepare("SELECT * FROM users WHERE email = :email");
+            $stmt->bindParam(':email', $email);
+            $stmt->execute();
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            $response = [];
+            if($stmt->rowCount() == 0){
+                $stmt = $conn->prepare("INSERT INTO users (type, fname, lname, phone, email, password, department) VALUES (:type, :fname, :lname, :phone, :email, :password, :department)");
+                $stmt->bindParam(":type", $type);
+                $stmt->bindParam(":fname", $fname);
+                $stmt->bindParam(":lname", $lname);
+                $stmt->bindParam(":phone", $phone);
+                $stmt->bindParam(":email", $email);
+                $stmt->bindParam(":password", $password);
+                $stmt->bindParam(":department", $department);
+                $result = $stmt->execute();
+                if ($stmt->rowCount() == 1) {
+                    // TODO: User authenticated, set session and redirect to dashboard
+                    http_response_code(200);
+                    $response = ['status' => 200, 'message' => 'Successful!', 'result' => $result];
+                } else {
+                    // TODO: Authentication failed, show error message
+                    http_response_code(401);
+                    $response = ['status' => 401, 'message' => 'Error!'];
+                }
+            }else{
+                http_response_code(200);
+                $response = ['status' => 200, 'message' => 'Employee with same email already exists!'];
+
+            }
+            echo json_encode($response);
+
+
+
+           
+            // $fname = $data->fname;
+            // $lname = $data->lname;
+            // $phone = $data->phone;
+            // $type = $data->type;
+
+            // $stmt = $conn->prepare("SELECT * FROM users WHERE email = :email AND password = :password");
+            // $stmt->bindParam(':email', $email);
+            // $stmt->bindParam(':password', $password);
+
+            
+
+
+        }else if (isset($path[3]) && $path[3] == "employee" && isset($path[4]) && $path[4] == "edit") {
+            // $email = $data->email;
+            // $password = $data->password;
+            $json_data = file_get_contents('php://input');
+            $_POST = json_decode($json_data, true);
+            $fname = $_POST["fname"];
+            $lname = $_POST["lname"];
+            $email = $_POST["email"];
+            $phone = $_POST["phone"];
+
+            $stmt = $conn->prepare("SELECT * FROM users WHERE email = :email");
+            $stmt->bindParam(':email', $email);
+            $stmt->execute();
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            $response = [];
+            if($stmt->rowCount() > 0){
+                $stmt = $conn->prepare("UPDATE users SET fname='$fname', lname='$lname', phone='$phone' WHERE email ='$email'");
+                $result = $stmt->execute();
+                if ($stmt->rowCount() == 1) {
+                    // TODO: User authenticated, set session and redirect to dashboard
+                    http_response_code(200);
+                    $response = ['status' => 200, 'message' => 'Successful!', 'result' => $result];
+                } else {
+                    // TODO: Authentication failed, show error message
+                    http_response_code(401);
+                    $response = ['status' => 401, 'message' => 'Error!'];
+                }
+            }else{
+                http_response_code(200);
+                $response = ['status' => 401, 'message' => 'Employee doesnot exist!'];
+
+            }
+            echo json_encode($response);
+
+        }else if (isset($path[3]) && $path[3] == "user" && isset($path[4]) && $path[4] == "login" && isset($data->email) && isset($data->password)) {
             $email = $data->email;
             $password = $data->password;
-
 
             $stmt = $conn->prepare("SELECT * FROM users WHERE email = :email AND password = :password");
             $stmt->bindParam(':email', $email);
@@ -173,7 +265,7 @@ switch ($method) {
 
             echo json_encode($response);
 
-        } else if (($path[3]) && $path[3] == "register") {
+        }else if (($path[3]) && $path[3] == "register") {
 
             // Retrieve user data from request
             $json_data = file_get_contents('php://input');
