@@ -19,7 +19,7 @@ include 'DbConnect.php';
 
 
 $objDb = new DbConnect;
-$email = new Mail();
+$emailer = new Mail();
 
 $conn = $objDb->connect();
 $base_url = 'http://localhost:3000/';
@@ -53,31 +53,69 @@ switch ($method) {
 
         $data = (object) array();
         if (isset($path[3]) && $path[3] == "employees") {
-            $sql = "SELECT * from users where type='employee'";
+            $sql = "SELECT * from users";
             $stmt = $conn->prepare($sql);
             $stmt->execute();
-            $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            $all_employees = (object) array(
+            $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $all_users = (object) array(
                 'building' => array(),
                 'pool' => array(),
                 'security' => array(),
-                'garden' => array()
+                'garden' => array(),
+                'residents' => array(),
+                'visitors' => array()
             );
-            $emps = array();
-            foreach ($employees as $emp) {
-                $dept = $emp['department'];
+            $usrs = array();
+            foreach ($users as $u) {
+                $dept = $u['department'];
                 if ($dept == 'building') {
-                    array_push($all_employees->building, $emp);
+                    array_push($all_users->building, $u);
                 } else if ($dept == 'pool') {
-                    array_push($all_employees->pool, $emp);
+                    array_push($all_users->pool, $u);
                 } else if ($dept == 'garden') {
-                    array_push($all_employees->garden, $emp);
+                    array_push($all_users->garden, $u);
                 } else if ($dept == 'security') {
-                    array_push($all_employees->security, $emp);
+                    array_push($all_users->security, $u);
+                }else if($u['type']=='user'){
+                    array_push($all_users->residents, $u);
+                }else if($u['type']=='visitor'){
+                    array_push($all_users->visitors, $u);
                 }
-                array_push($emps, $emp);
+                array_push($usrs, $u);
             }
-            $data = $all_employees;
+            $data = $all_users;
+        } else if (isset($path[3]) && $path[3] == "all-users") {
+            $sql = "SELECT * from users";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute();
+            $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $all_users = (object) array(
+                'building' => array(),
+                'pool' => array(),
+                'security' => array(),
+                'garden' => array(),
+                'residents' => array(),
+                'visitors' => array()
+            );
+            $usrs = array();
+            foreach ($users as $u) {
+                $dept = $u['department'];
+                if ($dept == 'building') {
+                    array_push($all_users->building, $u);
+                } else if ($dept == 'pool') {
+                    array_push($all_users->pool, $u);
+                } else if ($dept == 'garden') {
+                    array_push($all_users->garden, $u);
+                } else if ($dept == 'security') {
+                    array_push($all_users->security, $u);
+                }else if($u['type']=='user'){
+                    array_push($all_users->residents, $u);
+                }else if($u['type']=='visitor'){
+                    array_push($all_users->visitors, $u);
+                }
+                array_push($usrs, $u);
+            }
+            $data = $all_users;
         } else if (isset($path[3]) && $path[3] == "users") {
             $stmt = $conn->prepare($sql);
             $stmt->execute();
@@ -229,6 +267,7 @@ switch ($method) {
             $lname = $_POST["lname"];
             $email = $_POST["email"];
             $phone = $_POST["phone"];
+            $type = $_POST["type"];
 
             $stmt = $conn->prepare("SELECT * FROM users WHERE email = :email");
             $stmt->bindParam(':email', $email);
@@ -236,7 +275,7 @@ switch ($method) {
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
             $response = [];
             if($stmt->rowCount() > 0){
-                $stmt = $conn->prepare("UPDATE users SET fname='$fname', lname='$lname', phone='$phone' WHERE email ='$email'");
+                $stmt = $conn->prepare("UPDATE users SET fname='$fname', lname='$lname', phone='$phone', type='$type' WHERE email ='$email'");
                 $result = $stmt->execute();
                 if ($stmt->rowCount() == 1) {
                     // TODO: User authenticated, set session and redirect to dashboard
@@ -290,62 +329,78 @@ switch ($method) {
             $hash = md5(rand(0, 1000));
 
             // Prepare and bind SQL statement
-            $stmt = $conn->prepare("INSERT INTO users (type, fname, lname, phone, email, password, dob, hash) VALUES (:uType, :first_name, :last_name, :phone, :email, :password, :dob, :hash)");
-            $stmt->bindParam(":uType", $userType);
-            $stmt->bindParam(":first_name", $fname);
-            $stmt->bindParam(":last_name", $lname);
-            $stmt->bindParam(":phone", $phone);
-            $stmt->bindParam(":email", $email);
-            $stmt->bindParam(":password", $password);
-            $stmt->bindParam(":dob", $dob);
-            $stmt->bindParam(":hash", $hash);
+            $stmt = $conn->prepare("SELECT * from users where email = :email");
+            $stmt->bindParam(':email', $email);
+            $stmt->execute();
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($stmt->rowCount() >0) {
+                http_response_code(401);
+                $response = ['status' => 'Error', 'message' => 'Account with this email already exists!'];
+            }else{
+                $stmt = $conn->prepare("INSERT INTO users (type, fname, lname, phone, email, password, dob, hash) VALUES (:uType, :first_name, :last_name, :phone, :email, :password, :dob, :hash)");
+                $stmt->bindParam(":uType", $userType);
+                $stmt->bindParam(":first_name", $fname);
+                $stmt->bindParam(":last_name", $lname);
+                $stmt->bindParam(":phone", $phone);
+                $stmt->bindParam(":email", $email);
+                $stmt->bindParam(":password", $password);
+                $stmt->bindParam(":dob", $dob);
+                $stmt->bindParam(":hash", $hash);
 
-            try {
+                try {
 
-                // Execute insert statement here
-                $result = $stmt->execute();
-                // Execute statement
-                if ($result === true) {
+                    // Execute insert statement here
+                    $result = $stmt->execute();
+                    // Execute statement
+                    if ($result === true) {
 
-                    $to = $email;
-                    $from = 'resicomm@jxs2011.uta.cloud';
-                    $subject = 'Signup | Verification';
-                    $message = ' 
+                        $to = 'karan.nanda97@gmail.com';
+                        $from = 'resicomm@jxs2011.uta.cloud';
+                        $subject = 'Signup | Verification';
+                        $message = ' 
 
-                    Thank you for signing up on ResiComm! 
-                    Your account has been created, you can login with the following credentials after you have activated your account by pressing the url below. 
+                        Thank you for signing up on ResiComm! 
+                        Your account has been created, you can login with the following credentials after you have activated your account by pressing the url below. 
 
-                    ------------------------ 
-                    Email: ' . $email . ' 
-                    Password: ' . $password . ' 
-                    ------------------------ 
+                        ------------------------ 
+                        Email: ' . $email . ' 
+                        Password: ' . $password . ' 
+                        ------------------------ 
 
-                    Please click this link to activate your account: 
-                    ' . $base_url . 'verify?email=' . $email . '&hash=' . $hash . ' 
+                        Please click this link to activate your account: 
+                        ' . $base_url . 'verify?email=' . $email . '&hash=' . $hash . ' 
 
-                    ';
+                        ';
 
-                    $customMessage = (object) array(
-                        'to' => $to,
-                        'from' => $from,
-                        'subject' => $subject,
-                        'message' => $message
-                    );
+                        $customMessage = (object) array(
+                            'to' => $to,
+                            'from' => $from,
+                            'subject' => $subject,
+                            'message' => $message
+                        );
 
-                    $email->transactionalEmail($customMessage);
-                }
-            } catch (PDOException $e) {
-                if ($e->errorInfo[1] == 1062) {
-                    // Handle duplicate entry error here
-                    // You can access the error code using $e->errorInfo[1]
+                        $emailer->transactionalEmail($customMessage);
+                    }
+                    http_response_code(200);
+                    $response = ['status' => 200, 'message' => 'Account created successfully. Verify email to continue!'];
 
-                    http_response_code(400);
-                    $response = ['status' => 'Error', 'message' => 'Account with this email already exists!'];
-                } else {
-                    http_response_code(400);
-                    $response = ['status' => 'Error', 'message' => 'Failed to create record.'];
+                } catch (PDOException $e) {
+                    if ($e->errorInfo[1] == 1062) {
+                        // Handle duplicate entry error here
+                        // You can access the error code using $e->errorInfo[1]
+
+                        http_response_code(400);
+                        $response = ['status' => 'Error', 'message' => 'Account with this email already exists!'];
+                    } else {
+                        http_response_code(400);
+                        $response = ['status' => 'Error', 'message' => 'Failed to create record.'];
+                    }
                 }
             }
+            echo json_encode($response);
+
+
+            
 
             // Execute statement
             // if ($stmt->execute() === TRUE) {

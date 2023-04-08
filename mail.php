@@ -15,7 +15,8 @@ class Mail {
             $smtp_password = 'Resicomm@123';
 
             $mail->SMTPDebug = 2;                                      
-            $mail->isSMTP();                                           
+            $mail->isSMTP();      
+            $mail->SMTPDebug  = 0;
             $mail->Host       = $smtp_host;                   
             $mail->SMTPAuth   = true;                            
             $mail->Username   = $smtp_username;                
@@ -33,12 +34,10 @@ class Mail {
             $mail->Body    = $customMessage->message;
             $mail->AltBody = 'Body in plain text for non-HTML mail clients';
             $mail->send();
-            echo "Mail has been sent successfully!";
+            // echo "Mail has been sent successfully!";
         } catch (Exception $e) {
             echo "Message could not be sent. Mailer Error: {$mail->ErrorInfo}";
         }
-
-
     }
 }
 
