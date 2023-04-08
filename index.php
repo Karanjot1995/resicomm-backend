@@ -83,11 +83,30 @@ switch ($method) {
             $stmt->execute();
             $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $data = $users;
+        } else if (isset($path[3]) && (strpos($path[3], 'users') !== false) && isset($_GET['user_id']) && !empty($_GET['user_id'])) {
+            $user_id = $_GET['user_id'];
+            $stmt = $conn->prepare("SELECT * from users where id='$user_id'");
+            $stmt->execute();
+            $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $user = $users[0];
+            $data = ['status' => 200, 'user_details' => $user];
         } else if (isset($path[3]) && $path[3] == "amenities") {
             $stmt = $conn->prepare("SELECT * from amenities");
             $stmt->execute();
             $amenities = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $data = $amenities;
+        } else if (isset($path[3]) && (strpos($path[3], 'amenity') !== false) && isset($_GET['id']) && !empty($_GET['id'])) {
+            $amenity_id = $_GET['id'];
+            $stmt = $conn->prepare("SELECT * from amenities where id='$amenity_id'");
+            $stmt->execute();
+            $amenities = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $amenity = $amenities[0];
+            $data = ['status' => 200, 'amenity_details' => $amenity];
+        } else if (isset($path[3]) && (strpos($path[3], 'events') !== false)) {
+            $stmt = $conn->prepare("SELECT * from events");
+            $stmt->execute();
+            $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $data = ['status' => 200, 'events' => $events];
         } else if (isset($path[3]) && (strpos($path[3], 'vehicles') !== false) && isset($_GET['id']) && !empty($_GET['id'])) {
             $vehicle_id = $_GET['id'];
             $stmt = $conn->prepare("SELECT * from vehicles where id='$vehicle_id'");
@@ -183,6 +202,95 @@ switch ($method) {
 
             echo json_encode($response);
 
+        } else if (isset($path[3]) && $path[3] == "payments") {
+            $json_data = file_get_contents('php://input');
+            $_POST = json_decode($json_data, true);
+
+            $sql = "SELECT * from payments where 1=1";
+
+            if (isset($_POST['user_id'])) {
+                $user_id = $_POST["user_id"];
+                $sql .= " AND user_id = '$user_id'";
+            }
+
+            if (isset($_POST['payment_type'])) {
+                $payment_type = $_POST["payment_type"];
+                $sql .= " AND payment_type = '$payment_type'";
+            }
+
+
+            if (isset($_POST['expiry_date'])) {
+                $expiry_date = $_POST["expiry_date"];
+                $sql .= " AND expiry_date > '$expiry_date'";
+            }
+
+            $stmt = $conn->prepare($sql);
+            $stmt->execute();
+            $payments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            if ($stmt->execute() == true) {
+                $data = ['status' => 200, 'payments' => $payments];
+            } else {
+                $data = ['status' => 400, 'message' => 'Failed to fetch payments!'];
+            }
+
+            echo json_encode($data);
+        } else if (isset($path[3]) && $path[3] == "add-payment") {
+            $json_data = file_get_contents('php://input');
+            $_POST = json_decode($json_data, true);
+
+            $user_id = $_POST["user_id"];
+            $payment_amount = $_POST["payment_amount"];
+            $payment_type = $_POST["payment_type"];
+            $payment_date = $_POST["payment_date"];
+            $expiry_date = $_POST["expiry_date"];
+            $payment_method = $_POST["payment_method"];
+            $last_four_digits = $_POST["last_four_digits"];
+            $transaction_id = uniqid();
+
+            $stmt = $conn->prepare("INSERT INTO payments (user_id, payment_amount, payment_type, payment_date, expiry_date, payment_method, last_four_digits, transaction_id) VALUES ('$user_id', '$payment_amount, '$payment_type, '$payment_date, '$expiry_date, '$payment_method, '$last_four_digits, '$transaction_id')");
+
+
+            $result = $stmt->execute();
+
+            if ($result === true) {
+                $data = ['status' => 200, 'message' => 'Payment Successful!'];
+
+            } else {
+                $data = ['status' => 400, 'message' => 'Payment Failed!'];
+
+            }
+
+            echo json_encode($data);
+        } else if (isset($path[3]) && $path[3] == "events") {
+            $json_data = file_get_contents('php://input');
+            $_POST = json_decode($json_data, true);
+
+
+
+            $sql = "SELECT * FROM events WHERE 1=1";
+
+            if (isset($_POST['start_time'])) {
+                $start_time = $_POST["start_time"];
+                $sql .= " AND start_time > '$start_time'";
+            }
+
+            if (isset($_POST['type'])) {
+                $type = $_POST["type"];
+                $sql .= " AND type = '$type'";
+            }
+
+            $stmt = $conn->prepare($sql);
+            $stmt->execute();
+            $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            if ($stmt->execute() == true) {
+                $response = ['status' => 200, 'events' => $events];
+            } else {
+                $response = ['status' => 400, 'message' => 'Failed to fetch events!'];
+            }
+
+            echo json_encode($response);
         } else if (($path[3]) && $path[3] == "register") {
 
             // Retrieve user data from request
@@ -498,9 +606,9 @@ switch ($method) {
             $color = $_POST['color'];
             $type = $_POST['type'];
             $user_id = $_POST['user_id'];
-           
+
             $stmt = $conn->prepare("INSERT INTO vehicles (make, model, number_plate, color, type, user_id) VALUES ('$make', '$model', '$number_plate', '$color', '$type', '$user_id')");
-            
+
             if ($stmt->execute() == true) {
                 $response = ['status' => 200, 'message' => 'Vehicle added successfully!'];
             } else {
@@ -559,6 +667,90 @@ switch ($method) {
             } else {
                 $response = ['status' => 400, 'message' => 'Failed to update vehicle details!'];
             }
+        } else if (($path[3]) && (strpos($path[3], 'remove-membership') !== false) && isset($_GET['user_id']) && !empty($_GET['membership_id'])) {
+            $input_data = file_get_contents("php://input");
+            $data = json_decode($input_data, true);
+
+            $user_id = $_GET["user_id"];
+            $membership_id = $_GET["membership_id"];
+
+
+            // Check if email and hash combination exist in database
+            $sql = "SELECT * FROM users WHERE id='$user_id'";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute();
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($stmt->rowCount() == 1) {
+                $membershipsString = $user['memberships'];
+                $membershipsArray = json_decode($membershipsString, true);
+
+                $index = array_search($membership_id, $membershipsArray);
+                if ($index !== false) {
+                    unset($membershipsArray[$index]);
+
+                    $jsonArray = json_encode(array_values($membershipsArray));
+
+                    $sql = "UPDATE users SET memberships ='$jsonArray' WHERE id='$user_id'";
+                    $stmt = $conn->prepare($sql);
+                    if ($stmt->execute() == true) {
+                        http_response_code(200);
+                        $response = ['status' => 200, 'message' => 'Membership removed successfully!'];
+                    } else {
+                        http_response_code(400);
+                        $response = ['status' => 400, 'message' => 'Failed to remove membership!'];
+                    }
+                } else {
+                    $response = ['status' => 404, 'message' => 'Membership not found!'];
+                }
+
+            } else {
+                http_response_code(400);
+                $response = ['status' => 400, 'message' => 'Unknown Server Error!'];
+            }
+
+        } else if (($path[3]) && (strpos($path[3], 'add-membership') !== false) && isset($_GET['user_id']) && !empty($_GET['membership_id'])) {
+            $input_data = file_get_contents("php://input");
+            $data = json_decode($input_data, true);
+
+            $user_id = $_GET["user_id"];
+            $membership_id = $_GET["membership_id"];
+
+
+            $sql = "SELECT * FROM users WHERE id='$user_id'";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute();
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($stmt->rowCount() == 1) {
+                $membershipsString = $user['memberships'];
+                $membershipsArray = json_decode($membershipsString, true);
+
+                $index = array_search($membership_id, $membershipsArray);
+                if ($index !== false) {
+                    $response = ['status' => 404, 'message' => 'Membership already added!'];
+                } else {
+
+                    array_push($membershipsArray, intval($membership_id));
+
+                    $jsonArray = json_encode(array_values($membershipsArray));
+
+                    $sql = "UPDATE users SET memberships ='$jsonArray' WHERE id='$user_id'";
+                    $stmt = $conn->prepare($sql);
+                    if ($stmt->execute() == true) {
+                        http_response_code(200);
+                        $response = ['status' => 200, 'message' => 'Membership added successfully!'];
+                    } else {
+                        http_response_code(400);
+                        $response = ['status' => 400, 'message' => 'Failed to add membership!'];
+                    }
+                }
+
+            } else {
+                http_response_code(400);
+                $response = ['status' => 400, 'message' => 'Unknown Server Error!'];
+            }
+
         } else {
             $response = ['status' => 400, 'message' => 'Server Error'];
 
