@@ -962,6 +962,72 @@ switch ($method) {
                 $response = ['status' => 400, 'message' => 'Error!'];
             }
             echo json_encode($response);
+        }  else if (isset($path[3]) && $path[3] == "access-logs" && isset($path[4]) && $path[4] == "resident") {
+            $json_data = file_get_contents('php://input');
+            $_POST = json_decode($json_data, true);
+            $uid = $data->uid;
+
+            $sql = "SELECT * from access_logs where user_id='$uid'";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute();
+            $logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $log = (object) array();
+            $all_logs = array();
+            foreach($logs as $l){
+                $res_id = $l['user_id'];
+                $a_id = $l['amenity_id'];
+                // $visits->resident = null;
+                $sql = "SELECT * from users where id='$res_id'";
+                $stmt = $conn->prepare($sql);
+                $stmt->execute();
+                $resident = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                $sql = "SELECT * from amenities where id='$a_id'";
+                $stmt = $conn->prepare($sql);
+                $stmt->execute();
+                $amenity = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                $log = $l; 
+                $log['resident'] = $resident;
+                $log['amenity'] = $amenity;
+                array_push($all_logs, $log);
+                // $visits['resident'] = $resident;
+            }
+
+            if ($all_logs) {
+                $response = ['status' => 200, 'data' => $all_logs];
+            } else {
+                $response = ['status' => 400, 'message' => 'Error!'];
+            }
+            echo json_encode($response);
+        }   else if (isset($path[3]) && $path[3] == "access-logs" && isset($path[4]) && $path[4] == "create") {
+            $json_data = file_get_contents('php://input');
+            $_POST = json_decode($json_data, true);
+            $user_id = $data->user_id;
+            $name = $data->name;
+            $in_time = $data->in_time;
+            $out_time = $data->out_time;
+
+            $sql = "SELECT * from amenities where name='$name'";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute();
+            $amenity = $stmt->fetch(PDO::FETCH_ASSOC);
+            $id = $amenity['id'];
+
+            $log = (object) array();
+            $all_logs = array();
+
+            $stmt = $conn->prepare("INSERT INTO access_logs (amenity_id, user_id, in_time, out_time) VALUES ('$id', '$user_id', '$in_time', '$out_time')");
+            $result = $stmt->execute();
+
+            if ($result== true) {
+                $response = ['status' => 200, 'message' => 'Access request created successfully!'];
+            } else {
+                $response = ['status' => 400, 'message' => 'Failed to create access request!'];
+            }
+
+            echo json_encode($response);
         } else {
             $response = ['status' => 400, 'message' => 'Server Error'];
             echo json_encode($response);
