@@ -140,6 +140,13 @@ switch ($method) {
             $amenities = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $amenity = $amenities[0];
             $data = ['status' => 200, 'amenity_details' => $amenity];
+        } else if (isset($path[3]) && (strpos($path[3], 'events') !== false) && isset($_GET['id']) && !empty($_GET['id'])) {
+            $event_id = $_GET['id'];
+            $stmt = $conn->prepare("SELECT * from events where id='$event_id'");
+            $stmt->execute();
+            $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $event = $events[0];
+            $data = ['status' => 200, 'eventDetails' => $event];
         } else if (isset($path[3]) && (strpos($path[3], 'events') !== false)) {
             $stmt = $conn->prepare("SELECT * from events");
             $stmt->execute();
@@ -379,7 +386,7 @@ switch ($method) {
             $last_four_digits = $_POST["last_four_digits"];
             $transaction_id = uniqid();
 
-            $stmt = $conn->prepare("INSERT INTO payments (user_id, payment_amount, payment_type, payment_date, expiry_date, payment_method, last_four_digits, transaction_id) VALUES ('$user_id', '$payment_amount, '$payment_type, '$payment_date, '$expiry_date, '$payment_method, '$last_four_digits, '$transaction_id')");
+            $stmt = $conn->prepare("INSERT INTO payments (user_id, payment_amount, payment_type, payment_date, expiry_date, payment_method, last_four_digits, transaction_id) VALUES ('$user_id', '$payment_amount', '$payment_type', '$payment_date', '$expiry_date', '$payment_method', '$last_four_digits', '$transaction_id')");
 
 
             $result = $stmt->execute();
@@ -393,7 +400,37 @@ switch ($method) {
             }
 
             echo json_encode($data);
-        } else if (isset($path[3]) && $path[3] == "events") {
+        } else if (isset($path[3]) && $path[3] == "events" && isset($path[4]) && $path[4] == "registrations") {
+            $json_data = file_get_contents('php://input');
+            $_POST = json_decode($json_data, true);
+
+            $sql = "SELECT * FROM event_registrations WHERE 1=1";
+
+            if (isset($_POST['user_id'])) {
+                $user_id = $_POST["user_id"];
+                $sql .= " AND user_id = $user_id";
+            }
+
+            if (isset($_POST['events_id'])) {
+                $events_id = $_POST["events_id"];
+                $event_id_list = implode(',', $events_id);
+                $sql .= " AND event_id IN ($event_id_list)";
+            }
+
+            $stmt = $conn->prepare($sql);
+            $stmt->execute();
+            $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            if ($stmt->execute() == true) {
+                http_response_code(200);
+                $response = ['status' => 200, 'event_registrations' => $events];
+            } else {
+                http_response_code(400);
+                $response = ['status' => 400, 'message' => 'Failed to fetch event registrations!'];
+            }
+
+            echo json_encode($response);
+        } else if (isset($path[3]) && $path[3] == "events" && !isset($path[4])) {
             $json_data = file_get_contents('php://input');
             $_POST = json_decode($json_data, true);
 
@@ -418,6 +455,73 @@ switch ($method) {
             } else {
                 $response = ['status' => 400, 'message' => 'Failed to fetch events!'];
             }
+
+            echo json_encode($response);
+        } else if (isset($path[3]) && $path[3] == "events" && isset($path[4]) && $path[4] == "register") {
+            $json_data = file_get_contents('php://input');
+            $_POST = json_decode($json_data, true);
+
+            $user_id = $_POST["user_id"];
+            $event_id = $_POST["event_id"];
+
+            $sql = "SELECT * FROM event_registrations WHERE user_id='$user_id' AND event_id='$event_id'";
+
+            $stmt = $conn->prepare($sql);
+            $stmt->execute();
+
+
+            if ($stmt->rowCount() == 0) {
+                $stmt = $conn->prepare("INSERT INTO event_registrations (user_id, event_id) VALUES ('$user_id', '$event_id')");
+
+                $result = $stmt->execute();
+
+                if ($result === true) {
+                    http_response_code(200);
+                    $response = ['status' => 200, 'message' => 'Event registration successful!'];
+
+                } else {
+                    http_response_code(400);
+                    $response = ['status' => 400, 'message' => 'Event registration failed!'];
+
+                }
+
+            } else {
+                http_response_code(404);
+                $response = ['status' => 400, 'message' => 'Already reegistered to this event!'];
+            }
+
+            echo json_encode($response);
+        } else if (isset($path[3]) && $path[3] == "events" && isset($path[4]) && $path[4] == "cancel-registration") {
+            $json_data = file_get_contents('php://input');
+            $_POST = json_decode($json_data, true);
+
+            $user_id = $_POST["user_id"];
+            $event_id = $_POST["event_id"];
+
+            $sql = "SELECT * FROM event_registrations WHERE user_id='$user_id' AND event_id='$event_id'";
+
+            $stmt = $conn->prepare($sql);
+            $stmt->execute();
+
+            if ($stmt->rowCount() == 1) {
+                $stmt = $conn->prepare("DELETE FROM event_registrations WHERE user_id = $user_id AND event_id = $event_id");
+                $result = $stmt->execute();
+
+                if ($result === true) {
+                    http_response_code(200);
+                    $response = ['status' => 200, 'message' => 'Canceled event registration!'];
+                } else {
+                    http_response_code(400);
+                    $response = ['status' => 400, 'message' => 'Failed to cancel event registration!'];
+                }
+
+            } else {
+                http_response_code(404);
+                $response = ['status' => 400, 'message' => 'Event registration not found!'];
+            }
+
+
+
 
             echo json_encode($response);
         } else if (($path[3]) && $path[3] == "register") {
