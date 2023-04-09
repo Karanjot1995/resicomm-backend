@@ -22,7 +22,8 @@ $objDb = new DbConnect;
 $emailer = new Mail();
 
 $conn = $objDb->connect();
-$base_url = 'http://localhost:3000/';
+// $base_url = 'http://localhost:3000/';
+$base_url = "http://kxs9016.uta.cloud/";
 
 $method = $_SERVER['REQUEST_METHOD'];
 switch ($method) {
@@ -284,7 +285,27 @@ switch ($method) {
             
 
 
-        }else if (isset($path[3]) && $path[3] == "employee" && isset($path[4]) && $path[4] == "edit") {
+        }else if (isset($path[3]) && $path[3] == "employee" && isset($path[4]) && $path[4] == "delete") {
+            // $email = $data->email;
+            // $password = $data->password;
+            $json_data = file_get_contents('php://input');
+            $_POST = json_decode($json_data, true);
+            $email = $_POST["email"];
+
+            $stmt = $conn->prepare("DELETE FROM users WHERE email = :email");
+            $result = $stmt->execute();
+
+            if ($result === true) {
+                http_response_code(200);
+                $response = ['status' => 200, 'message' => 'Successfully deleted!'];
+            } else {
+                http_response_code(400);
+                $response = ['status' => 400, 'message' => 'Error!'];
+            }
+
+            echo json_encode($response);
+        }
+        else if (isset($path[3]) && $path[3] == "employee" && isset($path[4]) && $path[4] == "edit") {
             // $email = $data->email;
             // $password = $data->password;
             $json_data = file_get_contents('php://input');
@@ -578,7 +599,7 @@ switch ($method) {
                         ------------------------ 
 
                         Please click this link to activate your account: 
-                        ' . $base_url . 'verify?email=' . $email . '&hash=' . $hash . ' 
+                        ' . $base_url . 'login?email=' . $email . '&hash=' . $hash . ' 
 
                         ';
 
@@ -917,12 +938,12 @@ switch ($method) {
                 // $visits['resident'] = $resident;
             }
 
-            if ($all_visits) {
-                $response = ['status' => 200, 'data' => $all_visits];
-            } else {
-                $response = ['status' => 400, 'message' => 'Failed to create visitation request!'];
-            }
-            echo json_encode($response);
+            // if ($all_visits) {
+            //     $response = ['status' => 200, 'data' => $all_visits];
+            // } else {
+            //     $response = ['status' => 400, 'message' => 'Failed to create visitation request!'];
+            // }
+            echo json_encode($response = ['status' => 200, 'data' => $all_visits]);
         } else if (isset($path[3]) && $path[3] == "visits" && isset($path[4]) && $path[4] == "resident") {
             $json_data = file_get_contents('php://input');
             $_POST = json_decode($json_data, true);
