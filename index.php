@@ -77,9 +77,9 @@ switch ($method) {
                     array_push($all_users->garden, $u);
                 } else if ($dept == 'security') {
                     array_push($all_users->security, $u);
-                }else if($u['type']=='user'){
+                } else if ($u['type'] == 'user') {
                     array_push($all_users->residents, $u);
-                }else if($u['type']=='visitor'){
+                } else if ($u['type'] == 'visitor') {
                     array_push($all_users->visitors, $u);
                 }
                 array_push($usrs, $u);
@@ -109,9 +109,9 @@ switch ($method) {
                     array_push($all_users->garden, $u);
                 } else if ($dept == 'security') {
                     array_push($all_users->security, $u);
-                }else if($u['type']=='user'){
+                } else if ($u['type'] == 'user') {
                     array_push($all_users->residents, $u);
-                }else if($u['type']=='visitor'){
+                } else if ($u['type'] == 'visitor') {
                     array_push($all_users->visitors, $u);
                 }
                 array_push($usrs, $u);
@@ -134,6 +134,11 @@ switch ($method) {
             $stmt->execute();
             $amenities = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $data = $amenities;
+        } else if (isset($path[3]) && $path[3] == "locations") {
+            $stmt = $conn->prepare("SELECT * from properties");
+            $stmt->execute();
+            $locations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $data = ['status' => 200, 'locations' => $locations];
         } else if (isset($path[3]) && (strpos($path[3], 'amenity') !== false) && isset($_GET['id']) && !empty($_GET['id'])) {
             $amenity_id = $_GET['id'];
             $stmt = $conn->prepare("SELECT * from amenities where id='$amenity_id'");
@@ -244,7 +249,7 @@ switch ($method) {
             $stmt->execute();
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
             $response = [];
-            if($stmt->rowCount() == 0){
+            if ($stmt->rowCount() == 0) {
                 $stmt = $conn->prepare("INSERT INTO users (type, fname, lname, phone, email, password, department) VALUES (:type, :fname, :lname, :phone, :email, :password, :department)");
                 $stmt->bindParam(":type", $type);
                 $stmt->bindParam(":fname", $fname);
@@ -263,7 +268,7 @@ switch ($method) {
                     http_response_code(401);
                     $response = ['status' => 401, 'message' => 'Error!'];
                 }
-            }else{
+            } else {
                 http_response_code(200);
                 $response = ['status' => 200, 'message' => 'Employee with same email already exists!'];
 
@@ -272,7 +277,7 @@ switch ($method) {
 
 
 
-           
+
             // $fname = $data->fname;
             // $lname = $data->lname;
             // $phone = $data->phone;
@@ -282,10 +287,10 @@ switch ($method) {
             // $stmt->bindParam(':email', $email);
             // $stmt->bindParam(':password', $password);
 
-            
 
 
-        }else if (isset($path[3]) && $path[3] == "employee" && isset($path[4]) && $path[4] == "delete") {
+
+        } else if (isset($path[3]) && $path[3] == "employee" && isset($path[4]) && $path[4] == "delete") {
             // $email = $data->email;
             // $password = $data->password;
             $json_data = file_get_contents('php://input');
@@ -304,8 +309,7 @@ switch ($method) {
             }
 
             echo json_encode($response);
-        }
-        else if (isset($path[3]) && $path[3] == "employee" && isset($path[4]) && $path[4] == "edit") {
+        } else if (isset($path[3]) && $path[3] == "employee" && isset($path[4]) && $path[4] == "edit") {
             // $email = $data->email;
             // $password = $data->password;
             $json_data = file_get_contents('php://input');
@@ -321,7 +325,7 @@ switch ($method) {
             $stmt->execute();
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
             $response = [];
-            if($stmt->rowCount() > 0){
+            if ($stmt->rowCount() > 0) {
                 $stmt = $conn->prepare("UPDATE users SET fname='$fname', lname='$lname', phone='$phone', type='$type' WHERE email ='$email'");
                 $result = $stmt->execute();
                 if ($stmt->rowCount() == 1) {
@@ -333,14 +337,14 @@ switch ($method) {
                     http_response_code(401);
                     $response = ['status' => 401, 'message' => 'Error!'];
                 }
-            }else{
+            } else {
                 http_response_code(200);
                 $response = ['status' => 401, 'message' => 'Employee doesnot exist!'];
 
             }
             echo json_encode($response);
 
-        }else if (isset($path[3]) && $path[3] == "user" && isset($path[4]) && $path[4] == "login" && isset($data->email) && isset($data->password)) {
+        } else if (isset($path[3]) && $path[3] == "user" && isset($path[4]) && $path[4] == "login" && isset($data->email) && isset($data->password)) {
             $email = $data->email;
             $password = $data->password;
 
@@ -564,10 +568,10 @@ switch ($method) {
             $stmt->bindParam(':email', $email);
             $stmt->execute();
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
-            if ($stmt->rowCount() >0) {
+            if ($stmt->rowCount() > 0) {
                 http_response_code(401);
                 $response = ['status' => 'Error', 'message' => 'Account with this email already exists!'];
-            }else{
+            } else {
                 $stmt = $conn->prepare("INSERT INTO users (type, fname, lname, phone, email, password, dob, hash) VALUES (:uType, :first_name, :last_name, :phone, :email, :password, :dob, :hash)");
                 $stmt->bindParam(":uType", $userType);
                 $stmt->bindParam(":first_name", $fname);
@@ -631,7 +635,7 @@ switch ($method) {
             echo json_encode($response);
 
 
-            
+
 
             // Execute statement
             // if ($stmt->execute() === TRUE) {
@@ -661,7 +665,7 @@ switch ($method) {
             $stmt = $conn->prepare("INSERT INTO visits (guest_id, user_id, vehicle_id, in_time, out_time, reason) VALUES ('$guest_id', '$user_id', '$vehicle_id', '$in_time', '$out_time', '$reason')");
             $result = $stmt->execute();
 
-            if ($result== true) {
+            if ($result == true) {
                 $response = ['status' => 200, 'message' => 'Visitation request created successfully!'];
             } else {
                 $response = ['status' => 400, 'message' => 'Failed to create visitation request!'];
@@ -917,7 +921,7 @@ switch ($method) {
 
             $visit = (object) array();
             $all_visits = array();
-            foreach($visits as $v){
+            foreach ($visits as $v) {
                 $res_id = $v['user_id'];
                 $gid = $v['guest_id'];
                 // $visits->resident = null;
@@ -926,12 +930,20 @@ switch ($method) {
                 $stmt->execute();
                 $resident = $stmt->fetch(PDO::FETCH_ASSOC);
 
+                $prop_id = $resident['property_id'];
+                $sql = "SELECT * from properties where id='$prop_id'";
+                $stmt = $conn->prepare($sql);
+                $stmt->execute();
+                $property = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                $resident['property_details'] = $property;
+
                 $sql = "SELECT * from users where id='$gid'";
                 $stmt = $conn->prepare($sql);
                 $stmt->execute();
                 $visitor = $stmt->fetch(PDO::FETCH_ASSOC);
 
-                $visit = $v; 
+                $visit = $v;
                 $visit['resident'] = $resident;
                 $visit['visitor'] = $visitor;
                 array_push($all_visits, $visit);
@@ -956,7 +968,7 @@ switch ($method) {
 
             $visit = (object) array();
             $all_visits = array();
-            foreach($visits as $v){
+            foreach ($visits as $v) {
                 $res_id = $v['user_id'];
                 $gid = $v['guest_id'];
                 // $visits->resident = null;
@@ -970,7 +982,7 @@ switch ($method) {
                 $stmt->execute();
                 $visitor = $stmt->fetch(PDO::FETCH_ASSOC);
 
-                $visit = $v; 
+                $visit = $v;
                 $visit['resident'] = $resident;
                 $visit['visitor'] = $visitor;
                 array_push($all_visits, $visit);
@@ -983,7 +995,7 @@ switch ($method) {
                 $response = ['status' => 400, 'message' => 'Error!'];
             }
             echo json_encode($response);
-        }  else if (isset($path[3]) && $path[3] == "access-logs" && isset($path[4]) && $path[4] == "resident") {
+        } else if (isset($path[3]) && $path[3] == "access-logs" && isset($path[4]) && $path[4] == "resident") {
             $json_data = file_get_contents('php://input');
             $_POST = json_decode($json_data, true);
             $uid = $data->uid;
@@ -995,7 +1007,7 @@ switch ($method) {
 
             $log = (object) array();
             $all_logs = array();
-            foreach($logs as $l){
+            foreach ($logs as $l) {
                 $res_id = $l['user_id'];
                 $a_id = $l['amenity_id'];
                 // $visits->resident = null;
@@ -1009,7 +1021,7 @@ switch ($method) {
                 $stmt->execute();
                 $amenity = $stmt->fetch(PDO::FETCH_ASSOC);
 
-                $log = $l; 
+                $log = $l;
                 $log['resident'] = $resident;
                 $log['amenity'] = $amenity;
                 array_push($all_logs, $log);
@@ -1022,7 +1034,7 @@ switch ($method) {
                 $response = ['status' => 400, 'message' => 'Error!'];
             }
             echo json_encode($response);
-        }   else if (isset($path[3]) && $path[3] == "access-logs" && isset($path[4]) && $path[4] == "create") {
+        } else if (isset($path[3]) && $path[3] == "access-logs" && isset($path[4]) && $path[4] == "create") {
             $json_data = file_get_contents('php://input');
             $_POST = json_decode($json_data, true);
             $user_id = $data->user_id;
@@ -1042,7 +1054,7 @@ switch ($method) {
             $stmt = $conn->prepare("INSERT INTO access_logs (amenity_id, user_id, in_time, out_time) VALUES ('$id', '$user_id', '$in_time', '$out_time')");
             $result = $stmt->execute();
 
-            if ($result== true) {
+            if ($result == true) {
                 $response = ['status' => 200, 'message' => 'Access request created successfully!'];
             } else {
                 $response = ['status' => 400, 'message' => 'Failed to create access request!'];
