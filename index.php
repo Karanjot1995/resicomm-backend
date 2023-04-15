@@ -128,6 +128,15 @@ switch ($method) {
             $stmt->execute();
             $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $user = $users[0];
+
+            $prop_id = $user['property_id'];
+            $sql = "SELECT * from properties where id='$prop_id'";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute();
+            $property = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            $user['property_details'] = $property;
+
             $data = ['status' => 200, 'user_details' => $user];
         } else if (isset($path[3]) && $path[3] == "amenities") {
             $stmt = $conn->prepare("SELECT * from amenities");
@@ -353,8 +362,17 @@ switch ($method) {
             $stmt->bindParam(':password', $password);
             $stmt->execute();
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
             if ($stmt->rowCount() == 1) {
                 // TODO: User authenticated, set session and redirect to dashboard
+                $prop_id = $user['property_id'];
+                $sql = "SELECT * from properties where id='$prop_id'";
+                $stmt = $conn->prepare($sql);
+                $stmt->execute();
+                $property = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                $user['property_details'] = $property;
+
                 http_response_code(200);
                 $response = ['status' => 200, 'message' => 'Successful!', 'user' => $user];
             } else {
@@ -479,6 +497,58 @@ switch ($method) {
                 $response = ['status' => 200, 'events' => $events];
             } else {
                 $response = ['status' => 400, 'message' => 'Failed to fetch events!'];
+            }
+
+            echo json_encode($response);
+        } else if (isset($path[3]) && $path[3] == "user" && isset($path[4]) && $path[4] == "update") {
+            $json_data = file_get_contents('php://input');
+            $_POST = json_decode($json_data, true);
+
+            $user_id = $_POST['user_id'];
+
+            $sql = "UPDATE users SET";
+
+            if (isset($_POST['first_name'])) {
+                $firstName = $_POST["first_name"];
+                $sql .= " fname = '$firstName',";
+            }
+
+            if (isset($_POST['last_name'])) {
+                $lastName = $_POST["last_name"];
+                $sql .= " lname = '$lastName',";
+            }
+
+            if (isset($_POST['phone'])) {
+                $phone = $_POST["phone"];
+                $sql .= " phone = '$phone',";
+            }
+
+            if (isset($_POST['dob'])) {
+                $dob = $_POST["dob"];
+                $sql .= " dob = '$dob',";
+            }
+
+            if (isset($_POST['linenseNumber'])) {
+                $license_number = $_POST["linenseNumber"];
+                $sql .= " license_number = '$license_number',";
+            }
+
+            $sql = substr($sql, 0, -1);
+
+            $sql .= " WHERE id = '$user_id'";
+
+
+
+            $stmt = $conn->prepare($sql);
+            $stmt->execute();
+            $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            if ($stmt->execute() == true) {
+                http_response_code(200);
+                $response = ['status' => 200, 'message' => 'User update successful!'];
+            } else {
+                http_response_code(400);
+                $response = ['status' => 400, 'message' => 'Failed to update user!'];
             }
 
             echo json_encode($response);
