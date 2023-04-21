@@ -22,8 +22,8 @@ $objDb = new DbConnect;
 $emailer = new Mail();
 
 $conn = $objDb->connect();
-// $base_url = 'http://localhost:3000/';
-$base_url = "http://kxs9016.uta.cloud/";
+$base_url = 'http://localhost:3000/';
+// $base_url = "http://kxs9016.uta.cloud/";
 
 $method = $_SERVER['REQUEST_METHOD'];
 switch ($method) {
@@ -128,7 +128,7 @@ switch ($method) {
             $stmt->execute();
             $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $user = $users[0];
-
+            // echo "user is".$user;
             $prop_id = $user['property_id'];
             $sql = "SELECT * from properties where id='$prop_id'";
             $stmt = $conn->prepare($sql);
@@ -136,7 +136,7 @@ switch ($method) {
             $property = $stmt->fetch(PDO::FETCH_ASSOC);
 
             $user['property_details'] = $property;
-
+            
             $data = ['status' => 200, 'user_details' => $user];
         } else if (isset($path[3]) && $path[3] == "amenities") {
             $stmt = $conn->prepare("SELECT * from amenities");
@@ -403,6 +403,12 @@ switch ($method) {
             if (isset($_POST['expiry_date'])) {
                 $expiry_date = $_POST["expiry_date"];
                 $sql .= " AND expiry_date > '$expiry_date'";
+            }
+
+            if (isset($_POST['sort_order']) &&  $_POST["sort_order"] == "ASC") {
+                $sql .= " ORDER BY expiry_date ASC";
+            } else {
+                $sql .= " ORDER BY expiry_date DESC";
             }
 
             $stmt = $conn->prepare($sql);
