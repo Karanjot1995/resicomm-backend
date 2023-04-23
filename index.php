@@ -136,7 +136,7 @@ switch ($method) {
             $property = $stmt->fetch(PDO::FETCH_ASSOC);
 
             $user['property_details'] = $property;
-            
+
             $data = ['status' => 200, 'user_details' => $user];
         } else if (isset($path[3]) && $path[3] == "amenities") {
             $stmt = $conn->prepare("SELECT * from amenities");
@@ -405,7 +405,7 @@ switch ($method) {
                 $sql .= " AND expiry_date > '$expiry_date'";
             }
 
-            if (isset($_POST['sort_order']) &&  $_POST["sort_order"] == "ASC") {
+            if (isset($_POST['sort_order']) && $_POST["sort_order"] == "ASC") {
                 $sql .= " ORDER BY expiry_date ASC";
             } else {
                 $sql .= " ORDER BY expiry_date DESC";
@@ -738,12 +738,14 @@ switch ($method) {
             $out_time = $data->out_time;
             $vehicle_id = $data->vehicle_id;
 
-            $stmt = $conn->prepare("INSERT INTO visits (guest_id, user_id, vehicle_id, in_time, out_time, reason) VALUES ('$guest_id', '$user_id', '$vehicle_id', '$in_time', '$out_time', '$reason')");
+            $stmt = $conn->prepare("INSERT INTO visits (guest_id, user_id, " . ($vehicle_id ? "vehicle_id, " : "") . "in_time, out_time, reason) VALUES ('$guest_id', '$user_id', " . ($vehicle_id ? "'$vehicle_id', " : "") . " '$in_time', '$out_time', '$reason')");
             $result = $stmt->execute();
 
             if ($result == true) {
+                http_response_code(200);
                 $response = ['status' => 200, 'message' => 'Visitation request created successfully!'];
             } else {
+                http_response_code(400);
                 $response = ['status' => 400, 'message' => 'Failed to create visitation request!'];
             }
             echo json_encode($response);
@@ -991,6 +993,12 @@ switch ($method) {
             $uid = $data->uid;
 
             $sql = "SELECT * from visits where guest_id='$uid'";
+
+            if (isset($_POST['request_id'])) {
+                $request_id = $_POST["request_id"];
+                $sql .= " AND id = '$request_id'";
+            }
+
             $stmt = $conn->prepare($sql);
             $stmt->execute();
             $visits = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -1188,6 +1196,24 @@ switch ($method) {
             } else {
                 $response = ['status' => 400, 'message' => 'Failed to update vehicle details!'];
             }
+        } else if (isset($path[3]) && (strpos($path[3], 'visits') !== false) && isset($path[3]) && (strpos($path[4], 'edit') !== false) && isset($_GET['id']) && !empty($_GET['id'])) {
+            $input_data = file_get_contents("php://input");
+            $data = json_decode($input_data, true);
+            $req_id = $_GET['id'];
+            $guest_id = $data['guest_id'];
+            $user_id = $data['user_id'];
+            $reason = $data['reason'];
+            $in_time = $data['in_time'];
+            $out_time = $data['out_time'];
+            $vehicle_id = $data['vehicle_id'];
+
+            $sql = "UPDATE visits SET guest_id = '$guest_id', user_id = '$user_id', reason = '$reason', in_time = '$in_time', out_time = '$out_time', vehicle_id = " . ($vehicle_id ? $vehicle_id : "NULL") . " WHERE id = '$req_id'";
+            $stmt = $conn->prepare($sql);
+            if ($stmt->execute() == true) {
+                $response = ['status' => 200, 'message' => 'Vehicle details updated successfully!'];
+            } else {
+                $response = ['status' => 400, 'message' => 'Failed to update vehicle details!'];
+            }
         } else if (($path[3]) && (strpos($path[3], 'remove-membership') !== false) && isset($_GET['user_id']) && !empty($_GET['membership_id'])) {
             $input_data = file_get_contents("php://input");
             $data = json_decode($input_data, true);
@@ -1305,6 +1331,15 @@ switch ($method) {
                 $response = ['status' => 200, 'message' => 'Vehicle deleted successfully!'];
             } else {
                 $response = ['status' => 400, 'message' => 'Failed to delete vehicle!'];
+            }
+        } else if (isset($path[3]) && (strpos($path[3], 'visits') !== false) && isset($_GET['id']) && !empty($_GET['id'])) {
+            $request_id = $_GET['id'];
+            $sql = "DELETE FROM visits WHERE id = '$request_id'";
+            $stmt = $conn->prepare($sql);
+            if ($stmt->execute() == true) {
+                $response = ['status' => 200, 'message' => 'Request deleted successfully!'];
+            } else {
+                $response = ['status' => 400, 'message' => 'Failed to delete request!'];
             }
         } else {
             $response = ['status' => 400, 'message' => 'Server Error'];
