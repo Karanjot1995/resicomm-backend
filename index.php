@@ -558,6 +558,119 @@ switch ($method) {
             }
 
             echo json_encode($response);
+        } else if (isset($path[3]) && $path[3] == "amenity" && isset($path[4]) && $path[4] == "update") {
+            $json_data = file_get_contents('php://input');
+            $_POST = json_decode($json_data, true);
+
+            $id = $_POST['id'];
+
+            $sql = "UPDATE amenities SET";
+
+            if (isset($_POST['name'])) {
+                $name = $_POST["name"];
+                $sql .= " name = '$name',";
+            }
+
+            if (isset($_POST['capacity'])) {
+                $capacity = $_POST["capacity"];
+                $sql .= " capacity = '$capacity',";
+            }
+
+            if (isset($_POST['mon_in_time'])) {
+                $mon_in_time = $_POST["mon_in_time"];
+                $sql .= " mon_in_time = '$mon_in_time',";
+            }
+            
+            if (isset($_POST['mon_out_time'])) {
+                $mon_out_time = $_POST["mon_out_time"];
+                $sql .= " mon_out_time = '$mon_out_time',";
+            }
+            
+            if (isset($_POST['tue_in_time'])) {
+                $tue_in_time = $_POST["tue_in_time"];
+                $sql .= " tue_in_time = '$tue_in_time',";
+            }
+            
+            if (isset($_POST['tue_out_time'])) {
+                $tue_out_time = $_POST["tue_out_time"];
+                $sql .= " tue_out_time = '$tue_out_time',";
+            }
+            
+            if (isset($_POST['wed_in_time'])) {
+                $wed_in_time = $_POST["wed_in_time"];
+                $sql .= " wed_in_time = '$wed_in_time',";
+            }
+            
+            if (isset($_POST['wed_out_time'])) {
+                $wed_out_time = $_POST["wed_out_time"];
+                $sql .= " wed_out_time = '$wed_out_time',";
+            }
+            
+            if (isset($_POST['thu_in_time'])) {
+                $thu_in_time = $_POST["thu_in_time"];
+                $sql .= " thu_in_time = '$thu_in_time',";
+            }
+            
+            if (isset($_POST['thu_out_time'])) {
+                $thu_out_time = $_POST["thu_out_time"];
+                $sql .= " thu_out_time = '$thu_out_time',";
+            }
+            
+            if (isset($_POST['fri_in_time'])) {
+                $fri_in_time = $_POST["fri_in_time"];
+                $sql .= " fri_in_time = '$fri_in_time',";
+            }
+            
+            if (isset($_POST['fri_out_time'])) {
+                $fri_out_time = $_POST["fri_out_time"];
+                $sql .= " fri_out_time = '$fri_out_time',";
+            }
+            
+            if (isset($_POST['sat_in_time'])) {
+                $sat_in_time = $_POST["sat_in_time"];
+                $sql .= " sat_in_time = '$sat_in_time',";
+            }
+            
+            if (isset($_POST['sat_out_time'])) {
+                $sat_out_time = $_POST["sat_out_time"];
+                $sql .= " sat_out_time = '$sat_out_time',";
+            }
+            
+            if (isset($_POST['sun_in_time'])) {
+                $sun_in_time = $_POST["sun_in_time"];
+                $sql .= " sun_in_time = '$sun_in_time',";
+            }
+            
+            if (isset($_POST['sun_out_time'])) {
+                $sun_out_time = $_POST["sun_out_time"];
+                $sql .= " sun_out_time = '$sun_out_time',";
+            }
+            
+            if (isset($_POST['membership_price'])) {
+                $membership_price = $_POST["membership_price"];
+                $sql .= " membership_price = '$membership_price',";
+            }
+            
+
+            $sql = substr($sql, 0, -1);
+
+            $sql .= " WHERE id = '$id'";
+
+
+
+            $stmt = $conn->prepare($sql);
+            $stmt->execute();
+            $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            if ($stmt->execute() == true) {
+                http_response_code(200);
+                $response = ['status' => 200, 'message' => 'Amenity details updated successfully!'];
+            } else {
+                http_response_code(400);
+                $response = ['status' => 400, 'message' => 'Failed to update amenity details!'];
+            }
+
+            echo json_encode($response);
         } else if (isset($path[3]) && $path[3] == "events" && isset($path[4]) && $path[4] == "register") {
             $json_data = file_get_contents('php://input');
             $_POST = json_decode($json_data, true);
@@ -625,7 +738,59 @@ switch ($method) {
 
 
             echo json_encode($response);
-        } else if (($path[3]) && $path[3] == "register") {
+        } else if (isset($path[3]) && $path[3] == "events" && isset($path[4]) && $path[4] == "update") {
+            $json_data = file_get_contents('php://input');
+            $_POST = json_decode($json_data, true);
+
+            $id = $_POST['id'];
+
+            $sql = "UPDATE events SET";
+
+            if (isset($_POST['name'])) {
+                $name = $_POST["name"];
+                $sql .= " name = '$name',";
+            }
+
+            if (isset($_POST['description'])) {
+                $description = $_POST["description"];
+                $sql .= " description = '$description',";
+            }
+
+            if (isset($_POST['start_time'])) {
+                $start_time = $_POST["start_time"];
+                $sql .= " start_time = '$start_time',";
+            }
+
+            if (isset($_POST['end_time'])) {
+                $end_time = $_POST["end_time"];
+                $sql .= " end_time = '$end_time',";
+            }
+
+            if (isset($_POST['location'])) {
+                $location = $_POST["location"];
+                $sql .= " location = '$location',";
+            }
+
+            $sql = substr($sql, 0, -1);
+
+            $sql .= " WHERE id = '$id'";
+
+
+
+            $stmt = $conn->prepare($sql);
+            $stmt->execute();
+            $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            if ($stmt->execute() == true) {
+                http_response_code(200);
+                $response = ['status' => 200, 'message' => 'Event details updated successfully!'];
+            } else {
+                http_response_code(400);
+                $response = ['status' => 400, 'message' => 'Failed to update event!'];
+            }
+
+            echo json_encode($response);
+        }  else if (($path[3]) && $path[3] == "register") {
 
             // Retrieve user data from request
             $json_data = file_get_contents('php://input');
@@ -747,6 +912,27 @@ switch ($method) {
             } else {
                 http_response_code(400);
                 $response = ['status' => 400, 'message' => 'Failed to create visitation request!'];
+            }
+            echo json_encode($response);
+        } else if (isset($path[3]) && $path[3] == "events" && isset($path[4]) && $path[4] == "create") {
+            $json_data = file_get_contents('php://input');
+            $_POST = json_decode($json_data, true);
+            $name = $data->name;
+            $description = $data->description;
+            $start_time = $data->start_time;
+            $end_time = $data->end_time;
+            $type = $data->type;
+            $location = $data->location;
+
+            $stmt = $conn->prepare("INSERT INTO events (name, description, start_time, end_time, type, location) VALUES ('$name', '$description', '$start_time', '$end_time', '$type', '$location')");
+            $result = $stmt->execute();
+
+            if ($result == true) {
+                http_response_code(200);
+                $response = ['status' => 200, 'message' => 'Event created successfully!'];
+            } else {
+                http_response_code(400);
+                $response = ['status' => 400, 'message' => 'Failed to create event!'];
             }
             echo json_encode($response);
         } else if (($path[3]) && $path[3] == "resend-verification") {
@@ -1341,7 +1527,19 @@ switch ($method) {
             } else {
                 $response = ['status' => 400, 'message' => 'Failed to delete request!'];
             }
+        } else if (isset($path[3]) && (strpos($path[3], 'events') !== false) && isset($_GET['id']) && !empty($_GET['id'])) {
+            $request_id = $_GET['id'];
+            $sql = "DELETE FROM events WHERE id = '$request_id'";
+            $stmt = $conn->prepare($sql);
+            if ($stmt->execute() == true) {
+                http_response_code(200);
+                $response = ['status' => 200, 'message' => 'Event deleted successfully!'];
+            } else {
+                http_response_code(400);
+                $response = ['status' => 400, 'message' => 'Failed to delete event!'];
+            }
         } else {
+            http_response_code(400);
             $response = ['status' => 400, 'message' => 'Server Error'];
 
             // $sql = "DELETE FROM users WHERE id = :id";
