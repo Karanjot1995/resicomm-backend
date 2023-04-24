@@ -122,6 +122,27 @@ switch ($method) {
             $stmt->execute();
             $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $data = $users;
+        } else if (isset($path[3]) && $path[3] == "access-logs-count") {
+            $stmt = $conn->prepare("SELECT COUNT(*) as count FROM access_logs al INNER JOIN amenities a ON al.amenity_id = a.id GROUP BY al.amenity_id;");
+            $stmt->execute();
+            $access_logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $data = array_column($access_logs, 'count');
+        } else if (isset($path[3]) && $path[3] == "access-logs-report") {
+            $stmt = $conn->prepare("SELECT al.id, us.fname as 'Name', am.name as 'Amenity Name', DATE(al.in_time) as 'Date', TIME(al.in_time) as 'In Time', TIME(al.out_time) as 'Out Time' FROM access_logs al JOIN users us ON al.user_id = us.id JOIN amenities am ON al.amenity_id = am.id ORDER BY al.id;");
+            $stmt->execute();
+            $access_logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $data = [];
+            foreach ($access_logs as $log) {
+                $row = [
+                    $log['id'],
+                    $log['Name'],
+                    $log['Amenity Name'],
+                    $log['Date'],
+                    $log['In Time'],
+                    $log['Out Time']
+                ];
+                $data[] = $row;
+            }
         } else if (isset($path[3]) && (strpos($path[3], 'users') !== false) && isset($_GET['user_id']) && !empty($_GET['user_id'])) {
             $user_id = $_GET['user_id'];
             $stmt = $conn->prepare("SELECT * from users where id='$user_id'");
