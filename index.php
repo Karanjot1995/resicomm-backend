@@ -580,77 +580,77 @@ switch ($method) {
                 $mon_in_time = $_POST["mon_in_time"];
                 $sql .= " mon_in_time = '$mon_in_time',";
             }
-            
+
             if (isset($_POST['mon_out_time'])) {
                 $mon_out_time = $_POST["mon_out_time"];
                 $sql .= " mon_out_time = '$mon_out_time',";
             }
-            
+
             if (isset($_POST['tue_in_time'])) {
                 $tue_in_time = $_POST["tue_in_time"];
                 $sql .= " tue_in_time = '$tue_in_time',";
             }
-            
+
             if (isset($_POST['tue_out_time'])) {
                 $tue_out_time = $_POST["tue_out_time"];
                 $sql .= " tue_out_time = '$tue_out_time',";
             }
-            
+
             if (isset($_POST['wed_in_time'])) {
                 $wed_in_time = $_POST["wed_in_time"];
                 $sql .= " wed_in_time = '$wed_in_time',";
             }
-            
+
             if (isset($_POST['wed_out_time'])) {
                 $wed_out_time = $_POST["wed_out_time"];
                 $sql .= " wed_out_time = '$wed_out_time',";
             }
-            
+
             if (isset($_POST['thu_in_time'])) {
                 $thu_in_time = $_POST["thu_in_time"];
                 $sql .= " thu_in_time = '$thu_in_time',";
             }
-            
+
             if (isset($_POST['thu_out_time'])) {
                 $thu_out_time = $_POST["thu_out_time"];
                 $sql .= " thu_out_time = '$thu_out_time',";
             }
-            
+
             if (isset($_POST['fri_in_time'])) {
                 $fri_in_time = $_POST["fri_in_time"];
                 $sql .= " fri_in_time = '$fri_in_time',";
             }
-            
+
             if (isset($_POST['fri_out_time'])) {
                 $fri_out_time = $_POST["fri_out_time"];
                 $sql .= " fri_out_time = '$fri_out_time',";
             }
-            
+
             if (isset($_POST['sat_in_time'])) {
                 $sat_in_time = $_POST["sat_in_time"];
                 $sql .= " sat_in_time = '$sat_in_time',";
             }
-            
+
             if (isset($_POST['sat_out_time'])) {
                 $sat_out_time = $_POST["sat_out_time"];
                 $sql .= " sat_out_time = '$sat_out_time',";
             }
-            
+
             if (isset($_POST['sun_in_time'])) {
                 $sun_in_time = $_POST["sun_in_time"];
                 $sql .= " sun_in_time = '$sun_in_time',";
             }
-            
+
             if (isset($_POST['sun_out_time'])) {
                 $sun_out_time = $_POST["sun_out_time"];
                 $sql .= " sun_out_time = '$sun_out_time',";
             }
-            
+
             if (isset($_POST['membership_price'])) {
                 $membership_price = $_POST["membership_price"];
                 $sql .= " membership_price = '$membership_price',";
             }
-            
+
 
             $sql = substr($sql, 0, -1);
 
@@ -790,7 +790,7 @@ switch ($method) {
             }
 
             echo json_encode($response);
-        }  else if (($path[3]) && $path[3] == "register") {
+        } else if (($path[3]) && $path[3] == "register") {
 
             // Retrieve user data from request
             $json_data = file_get_contents('php://input');
@@ -1304,6 +1304,55 @@ switch ($method) {
                 $response = ['status' => 400, 'message' => 'Error!'];
             }
             echo json_encode($response);
+        } else if (isset($path[3]) && $path[3] == "access-logs" && isset($path[4]) && $path[4] == "manager") {
+            $json_data = file_get_contents('php://input');
+            $_POST = json_decode($json_data, true);
+
+            $sql = "SELECT * from access_logs WHERE 1=1";
+
+
+
+            if (isset($_POST['amenity_id'])) {
+                $amenity_id = $_POST["amenity_id"];
+                $sql .= " AND amenity_id = '$amenity_id',";
+            }
+
+            $sql = substr($sql, 0, -1);
+            $stmt = $conn->prepare($sql);
+            $stmt->execute();
+            $logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $log = (object) array();
+            $all_logs = array();
+            foreach ($logs as $l) {
+                $res_id = $l['user_id'];
+                $a_id = $l['amenity_id'];
+                // $visits->resident = null;
+                $sql = "SELECT * from users where id='$res_id'";
+                $stmt = $conn->prepare($sql);
+                $stmt->execute();
+                $resident = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                $sql = "SELECT * from amenities where id='$a_id'";
+                $stmt = $conn->prepare($sql);
+                $stmt->execute();
+                $amenity = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                $log = $l;
+                $log['resident'] = $resident;
+                $log['amenity'] = $amenity;
+                array_push($all_logs, $log);
+                // $visits['resident'] = $resident;
+            }
+
+            if ($all_logs) {
+                http_response_code(200);
+                $response = ['status' => 200, 'data' => $all_logs];
+            } else {
+                http_response_code(400);
+                $response = ['status' => 400, 'message' => 'Error!'];
+            }
+            echo json_encode($response);
         } else if (isset($path[3]) && $path[3] == "access-logs" && isset($path[4]) && $path[4] == "create") {
             $json_data = file_get_contents('php://input');
             $_POST = json_decode($json_data, true);
@@ -1328,6 +1377,54 @@ switch ($method) {
                 $response = ['status' => 200, 'message' => 'Access request created successfully!'];
             } else {
                 $response = ['status' => 400, 'message' => 'Failed to create access request!'];
+            }
+
+            echo json_encode($response);
+        } else if (isset($path[3]) && $path[3] == "access-logs" && isset($path[4]) && $path[4] == "update") {
+            $json_data = file_get_contents('php://input');
+            $_POST = json_decode($json_data, true);
+
+            $id = $_POST['id'];
+
+            $sql = "UPDATE access_logs SET";
+
+            if (isset($_POST['accepted'])) {
+                $accepted = $_POST["accepted"];
+                $sql .= " accepted = '$accepted',";
+            }
+
+            // if (isset($_POST['last_name'])) {
+            //     $lastName = $_POST["last_name"];
+            //     $sql .= " lname = '$lastName',";
+            // }
+
+            // if (isset($_POST['phone'])) {
+            //     $phone = $_POST["phone"];
+            //     $sql .= " phone = '$phone',";
+            // }
+
+            // if (isset($_POST['dob'])) {
+            //     $dob = $_POST["dob"];
+            //     $sql .= " dob = '$dob',";
+            // }
+
+
+            $sql = substr($sql, 0, -1);
+
+            $sql .= " WHERE id = '$id'";
+
+
+
+            $stmt = $conn->prepare($sql);
+            $stmt->execute();
+            $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            if ($stmt->execute() == true) {
+                http_response_code(200);
+                $response = ['status' => 200, 'message' => 'Log updated successfully!'];
+            } else {
+                http_response_code(400);
+                $response = ['status' => 400, 'message' => 'Failed to update log!'];
             }
 
             echo json_encode($response);
