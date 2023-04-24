@@ -1483,19 +1483,56 @@ switch ($method) {
             $input_data = file_get_contents("php://input");
             $data = json_decode($input_data, true);
             $req_id = $_GET['id'];
-            $guest_id = $data['guest_id'];
-            $user_id = $data['user_id'];
-            $reason = $data['reason'];
-            $in_time = $data['in_time'];
-            $out_time = $data['out_time'];
-            $vehicle_id = $data['vehicle_id'];
 
-            $sql = "UPDATE visits SET guest_id = '$guest_id', user_id = '$user_id', reason = '$reason', in_time = '$in_time', out_time = '$out_time', vehicle_id = " . ($vehicle_id ? $vehicle_id : "NULL") . " WHERE id = '$req_id'";
+            $sql = "UPDATE visits SET";
+
+            if (isset($data['accepted'])) {
+                $accepted = $data["accepted"];
+                $sql .= " accepted = '$accepted',";
+            }
+
+            if (isset($data['guest_id'])) {
+                $guest_id = $data["guest_id"];
+                $sql .= " guest_id = '$guest_id',";
+            }
+
+            if (isset($data['user_id'])) {
+                $user_id = $data["user_id"];
+                $sql .= " user_id = '$user_id',";
+            }
+
+            if (isset($data['reason'])) {
+                $reason = $data["reason"];
+                $sql .= " reason = '$reason',";
+            }
+
+            if (isset($data['in_time'])) {
+                $in_time = $data["in_time"];
+                $sql .= " in_time = '$in_time',";
+            }
+
+            if (isset($data['out_time'])) {
+                $out_time = $data["out_time"];
+                $sql .= " out_time = '$out_time',";
+            }
+
+            if (isset($data['vehicle_id'])) {
+                $vehicle_id = $data["vehicle_id"];
+                $sql .= " vehicle_id = '$vehicle_id',";
+            }
+
+
+            $sql = substr($sql, 0, -1);
+
+            $sql .= " WHERE id = '$req_id'";
+
             $stmt = $conn->prepare($sql);
             if ($stmt->execute() == true) {
-                $response = ['status' => 200, 'message' => 'Vehicle details updated successfully!'];
+                http_response_code(200);
+                $response = ['status' => 200, 'message' => 'Visit Request updated successfully!'];
             } else {
-                $response = ['status' => 400, 'message' => 'Failed to update vehicle details!'];
+                http_response_code(400);
+                $response = ['status' => 400, 'message' => 'Failed to update visit request!'];
             }
         } else if (($path[3]) && (strpos($path[3], 'remove-membership') !== false) && isset($_GET['user_id']) && !empty($_GET['membership_id'])) {
             $input_data = file_get_contents("php://input");
