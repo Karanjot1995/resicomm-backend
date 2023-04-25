@@ -349,6 +349,7 @@ switch ($method) {
             $email = $_POST["email"];
             $phone = $_POST["phone"];
             $type = $_POST["type"];
+            $additional_attributes = $_POST["additional_attributes"];
 
             $stmt = $conn->prepare("SELECT * FROM users WHERE email = :email");
             $stmt->bindParam(':email', $email);
@@ -356,7 +357,7 @@ switch ($method) {
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
             $response = [];
             if ($stmt->rowCount() > 0) {
-                $stmt = $conn->prepare("UPDATE users SET fname='$fname', lname='$lname', phone='$phone', type='$type' WHERE email ='$email'");
+                $stmt = $conn->prepare("UPDATE users SET fname='$fname', lname='$lname', phone='$phone', type='$type', additional_attributes='$additional_attributes' WHERE email ='$email'");
                 $result = $stmt->execute();
                 if ($stmt->rowCount() == 1) {
                     // TODO: User authenticated, set session and redirect to dashboard
@@ -1197,13 +1198,14 @@ switch ($method) {
         } else if (isset($path[3]) && $path[3] == "visits" && isset($path[4]) && $path[4] == "get") {
             $json_data = file_get_contents('php://input');
             $_POST = json_decode($json_data, true);
-            $uid = $data->uid;
+            // $uid = $data->uid;
 
-            $sql = "SELECT * from visits where guest_id='$uid'";
+            $sql = "SELECT * FROM visits WHERE 1=1";
+            // $sql = "SELECT * from visits where guest_id='$uid'";
 
-            if (isset($_POST['request_id'])) {
-                $request_id = $_POST["request_id"];
-                $sql .= " AND id = '$request_id'";
+            if (isset($_POST['guest_id'])) {
+                $guest_id = $_POST["guest_id"];
+                $sql .= " AND guest_id = '$guest_id'";
             }
 
             $stmt = $conn->prepare($sql);
@@ -1289,9 +1291,16 @@ switch ($method) {
         } else if (isset($path[3]) && $path[3] == "access-logs" && isset($path[4]) && $path[4] == "resident") {
             $json_data = file_get_contents('php://input');
             $_POST = json_decode($json_data, true);
-            $uid = $data->uid;
+            // $uid = $data->uid;
 
-            $sql = "SELECT * from access_logs where user_id='$uid'";
+            $sql = "SELECT * FROM access_logs WHERE 1=1";
+            // $sql = "SELECT * from access_logs where user_id='$uid'";
+
+            if (isset($_POST['user_id'])) {
+                $user_id = $_POST["user_id"];
+                $sql .= " AND user_id = '$user_id'";
+            }
+
             $stmt = $conn->prepare($sql);
             $stmt->execute();
             $logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -1328,17 +1337,19 @@ switch ($method) {
         } else if (isset($path[3]) && $path[3] == "access-logs" && isset($path[4]) && $path[4] == "manager") {
             $json_data = file_get_contents('php://input');
             $_POST = json_decode($json_data, true);
-
+            $post_data_added = false;
             $sql = "SELECT * from access_logs WHERE 1=1";
-
 
 
             if (isset($_POST['amenity_id'])) {
                 $amenity_id = $_POST["amenity_id"];
                 $sql .= " AND amenity_id = '$amenity_id',";
+                $post_data_added = true;
             }
 
-            $sql = substr($sql, 0, -1);
+            if ($post_data_added) {
+                $sql = substr($sql, 0, -1);
+            }
             $stmt = $conn->prepare($sql);
             $stmt->execute();
             $logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -1369,6 +1380,106 @@ switch ($method) {
             if ($all_logs) {
                 http_response_code(200);
                 $response = ['status' => 200, 'data' => $all_logs];
+            } else {
+                http_response_code(400);
+                $response = ['status' => 400, 'message' => 'Error!'];
+            }
+            echo json_encode($response);
+        } else if (isset($path[3]) && $path[3] == "access-logs" && isset($path[4]) && $path[4] == "security-manager") {
+            $json_data = file_get_contents('php://input');
+            $_POST = json_decode($json_data, true);
+            $post_data_added = false;
+            $sql = "SELECT * from access_logs WHERE 1=1";
+
+
+            if (isset($_POST['amenity_id'])) {
+                $amenity_id = $_POST["amenity_id"];
+                $sql .= " AND amenity_id = '$amenity_id',";
+                $post_data_added = true;
+            }
+
+            if ($post_data_added) {
+                $sql = substr($sql, 0, -1);
+            }
+            $stmt = $conn->prepare($sql);
+            $stmt->execute();
+            $logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $log = (object) array();
+            $all_logs = array();
+            foreach ($logs as $l) {
+                $res_id = $l['user_id'];
+                $a_id = $l['amenity_id'];
+                // $visits->resident = null;
+                $sql = "SELECT * from users where id='$res_id'";
+                $stmt = $conn->prepare($sql);
+                $stmt->execute();
+                $resident = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                $sql = "SELECT * from amenities where id='$a_id'";
+                $stmt = $conn->prepare($sql);
+                $stmt->execute();
+                $amenity = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                $log = $l;
+                $log['resident'] = $resident;
+                $log['amenity'] = $amenity;
+                $log['type'] = "access-log";
+                array_push($all_logs, $log);
+                // $visits['resident'] = $resident;
+            }
+
+
+            $sql = "SELECT * FROM visits WHERE 1=1";
+
+          
+            $stmt = $conn->prepare($sql);
+            $stmt->execute();
+            $visits = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $visit = (object) array();
+            $all_visits = array();
+            foreach ($visits as $v) {
+                $res_id = $v['user_id'];
+                $gid = $v['guest_id'];
+                $sql = "SELECT * from users where id='$res_id'";
+                $stmt = $conn->prepare($sql);
+                $stmt->execute();
+                $resident = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                $prop_id = $resident['property_id'];
+                $sql = "SELECT * from properties where id='$prop_id'";
+                $stmt = $conn->prepare($sql);
+                $stmt->execute();
+                $property = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                $resident['property_details'] = $property;
+
+                $sql = "SELECT * from users where id='$gid'";
+                $stmt = $conn->prepare($sql);
+                $stmt->execute();
+                $visitor = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                $visit = $v;
+                $visit['resident'] = $resident;
+                $visit['visitor'] = $visitor;
+                $log['type'] = "visit";
+                array_push($all_visits, $visit);
+            }
+
+            $combined_array = array_merge($all_logs, $all_visits);
+
+
+            function sort_by_in_time($a, $b) {
+                return strtotime($a['in_time']) - strtotime($b['in_time']);
+            }
+
+            usort($combined_array, 'sort_by_in_time');
+
+            
+            if ($combined_array) {
+                http_response_code(200);
+                $response = ['status' => 200, 'data' => $combined_array];
             } else {
                 http_response_code(400);
                 $response = ['status' => 400, 'message' => 'Error!'];
@@ -1414,10 +1525,10 @@ switch ($method) {
                 $sql .= " accepted = '$accepted',";
             }
 
-            // if (isset($_POST['last_name'])) {
-            //     $lastName = $_POST["last_name"];
-            //     $sql .= " lname = '$lastName',";
-            // }
+            if (isset($_POST['status'])) {
+                $status = $_POST["status"];
+                $sql .= " status = '$status',";
+            }
 
             // if (isset($_POST['phone'])) {
             //     $phone = $_POST["phone"];
@@ -1540,6 +1651,11 @@ switch ($method) {
             if (isset($data['vehicle_id'])) {
                 $vehicle_id = $data["vehicle_id"];
                 $sql .= " vehicle_id = '$vehicle_id',";
+            }
+
+            if (isset($data['status'])) {
+                $status = $data["status"];
+                $sql .= " status = '$status',";
             }
 
 
