@@ -1611,7 +1611,7 @@ switch ($method) {
             }
 
             echo json_encode($response);
-        } else if (isset($path[3]) && $path[3] == "chat") {
+        } else if (isset($path[3]) && $path[3] == "chat" && !isset($path[4])) {
             $json_data = file_get_contents('php://input');
             $_POST = json_decode($json_data, true);
             $user_id = $data->uid;
@@ -1621,6 +1621,45 @@ switch ($method) {
 
             // $messages = [];
             $sql = "SELECT * FROM chats WHERE user_id in ($ids) and chat_user_id in ($ids)";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute();
+            $messages = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+
+            // $messages = Chat::whereIn('user_id',[$user_id, $user_id_2])->whereIn('chat_user_id', [$user_id_2, $user_id])->get();
+            $chats = [];
+            foreach($messages as $m){
+                $user_id = $m['user_id'];
+                $chat_user_id = $m['chat_user_id'];
+
+                $sql = "SELECT * from users where id='$user_id'";
+                $stmt = $conn->prepare($sql);
+                $stmt->execute();
+                $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                $sql = "SELECT * from users where id='$chat_user_id'";
+                $stmt = $conn->prepare($sql);
+                $stmt->execute();
+                $chat_user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                $m['user'] = $user;
+                $m['chat_user'] = $chat_user;
+                array_push($chats, $m);
+            }
+            
+            if($chats || count($chats)==0){
+                $response = ['status' => 200, 'data' => $chats];
+            }else{
+                $response = ['status' => 404, 'data' => 'Error!'];
+            }
+            echo json_encode($response);
+        } else if (isset($path[3]) && $path[3] == "chat"  && isset($path[4]) && $path[4] == "history") {
+            $json_data = file_get_contents('php://input');
+            $_POST = json_decode($json_data, true);
+            $user_id = $data->uid;
+
+            // $messages = [];
+            $sql = "SELECT * FROM chats WHERE user_id = '$user_id' OR chat_user_id = '$user_id' ORDER BY created_at DESC";
             $stmt = $conn->prepare($sql);
             $stmt->execute();
             $messages = $stmt->fetchAll(PDO::FETCH_ASSOC);
