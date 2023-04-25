@@ -1449,6 +1449,99 @@ switch ($method) {
             }
 
             echo json_encode($response);
+        } else if (isset($path[3]) && $path[3] == "chat" && isset($path[4]) && $path[4] == "send") {
+            $json_data = file_get_contents('php://input');
+            $_POST = json_decode($json_data, true);
+            $user_id = $data->user_id;
+            $chat_user_id = $data->chat_user_id;
+            $message = $data->message;
+
+            $data = null;
+            $chat = null;
+            $stmt = $conn->prepare("INSERT INTO chats (user_id, chat_user_id, message) VALUES ('$user_id', '$chat_user_id', '$message')");
+            // $sql="INSERT INTO chats (user_id, chat_user_id, message) VALUES ('$user_id', '$chat_user_id', '$message')";
+            // $stmt->execute();
+            if ($stmt->execute() == true) {
+                $last_id = $conn->lastInsertId();
+                $data = $last_id;
+                $sql = "SELECT * from chats where id='$last_id'";
+                $stmt = $conn->prepare($sql);
+                $stmt->execute();
+                $chat = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                $user_id = $chat['user_id'];
+                $chat_user_id = $chat['chat_user_id'];
+
+
+                $sql = "SELECT * from users where id='$user_id'";
+                $stmt = $conn->prepare($sql);
+                $stmt->execute();
+                $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+
+                $sql = "SELECT * from users where id='$chat_user_id'";
+                $stmt = $conn->prepare($sql);
+                $stmt->execute();
+                $chat_user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                $chat['user'] = $user;
+                $chat['chat_user'] = $chat_user;
+                
+                // echo "New record created successfully. Last inserted ID is: " . $last_id;
+            }
+
+
+            if($chat){
+                http_response_code(200);
+                $response = ['status' => 200, 'message' => $chat];
+            }else{
+                http_response_code(404);
+                $response = ['status' => 404, 'message' => 'Error!'];
+            }
+
+            echo json_encode($response);
+        } else if (isset($path[3]) && $path[3] == "chat") {
+            $json_data = file_get_contents('php://input');
+            $_POST = json_decode($json_data, true);
+            $user_id = $data->uid;
+            $user_id_2 = $data->rid;
+            $ids = [$user_id, $user_id_2];
+            $ids = implode(', ', $ids);
+
+            // $messages = [];
+            $sql = "SELECT * FROM chats WHERE user_id in ($ids) and chat_user_id in ($ids)";
+            $stmt = $conn->prepare($sql);
+            $stmt->execute();
+            $messages = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+
+            // $messages = Chat::whereIn('user_id',[$user_id, $user_id_2])->whereIn('chat_user_id', [$user_id_2, $user_id])->get();
+            $chats = [];
+            foreach($messages as $m){
+                $user_id = $m['user_id'];
+                $chat_user_id = $m['chat_user_id'];
+
+                $sql = "SELECT * from users where id='$user_id'";
+                $stmt = $conn->prepare($sql);
+                $stmt->execute();
+                $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                $sql = "SELECT * from users where id='$chat_user_id'";
+                $stmt = $conn->prepare($sql);
+                $stmt->execute();
+                $chat_user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                $m['user'] = $user;
+                $m['chat_user'] = $chat_user;
+                array_push($chats, $m);
+            }
+            
+            if($messages){
+                $response = ['status' => 200, 'data' => $chats];
+            }else{
+                $response = ['status' => 404, 'data' => 'Error!'];
+            }
+            echo json_encode($response);
         } else {
             $response = ['status' => 400, 'message' => 'Server Error'];
             echo json_encode($response);
