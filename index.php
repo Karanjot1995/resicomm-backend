@@ -1647,7 +1647,7 @@ switch ($method) {
                 array_push($chats, $m);
             }
             
-            if($messages){
+            if($chats || count($chats)==0){
                 $response = ['status' => 200, 'data' => $chats];
             }else{
                 $response = ['status' => 404, 'data' => 'Error!'];
